@@ -1,4 +1,4 @@
-import * as React from "react";
+import React, { useState } from "react";
 import { styled, alpha } from "@mui/material/styles";
 import AppBar from "@mui/material/AppBar";
 import Box from "@mui/material/Box";
@@ -76,12 +76,14 @@ export default function Navbar() {
     "Good morning, Admin"
   );
 
-  const [SidebarOpen, setSidebarOpen] = React.useState(false);
+  const [SidebarOpen, setSidebarOpen] = useState(false);
   const isSideBarOpen = Boolean(SidebarOpen);
 
 
 
-  const handleSideBarOpen = () => setSidebarOpen(true);
+  const handleSideBarOpen = () => {
+    setSidebarOpen(true);
+  }
 
 
 
@@ -273,11 +275,10 @@ export default function Navbar() {
             {/* Notifications Icon with Badge */}
             <Badge badgeContent={1} sx={{
               '& .MuiBadge-badge': {
-                minWidth: '12px',      // Reduces the width of the badge
-                height: '12px',        // Reduces the height of the badge
-                fontSize: '0.6rem',    // Reduces the font size of the content
-                padding: '6px 6px',      // Adjusts padding inside the badge
-                top: '-1px',            // Adjusts vertical positioning
+                minWidth: '8px',      // Reduces the width of the badge
+                height: '14px',        // Reduces the height of the badge
+                fontSize: '0.55rem',    // Reduces the font size of the content
+                top: '1px',            // Adjusts vertical positioning
                 left: '4px'           // Adjusts horizontal positioning
               }
             }} color="error">

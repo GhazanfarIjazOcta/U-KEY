@@ -25,7 +25,7 @@ function Sidebar2({ onClose }) {
   const [selectedItem, setSelectedItem] = useState(0);
 
   const listItems = [
-    { text: "Dashboard", icon: DashboardLogo, selectedIcon: SelectedDashboardLogo, route: "dashboard" },
+    { text: "Dashboard", icon: DashboardLogo, selectedIcon: SelectedDashboardLogo, route: "/dashboard" },
     { text: "Companies", icon: CompanyLogo, selectedIcon: SelectedCompanyLogo, route: "companies", },
     { text: "Users", icon: UserLogo, selectedIcon: SelectedUserLogo, route: "user-management" },
     { text: "Machines", icon: MachinesLogo, selectedIcon: SelectedMachinesLogo, route: "machines", },

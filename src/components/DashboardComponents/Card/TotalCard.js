@@ -18,7 +18,7 @@ function TotalCard({ icon, title, totalNumber, activeNumber, inactiveNumber, mai
     const iconSrc = iconMap[icon]
 
     return (
-        <Box sx={{ background: "#FFF", }}>
+        <Box sx={{ background: "#FFF", width: "100%" }}>
             <Box sx={{ display: "flex", gap: "1.5rem", alignItems: { sm: "start", xs: "center" }, justifyContent: "space-between", marginBottom: "0rem", padding: "1rem 2rem 0.5rem 1rem", flexFlow: "wrap" }}>
                 <Box sx={{ display: "flex", gap: "1.5rem", alignItems: "start", }}>
                     <Box sx={{ width: 44, height: 40, background: "#FEF2E5", borderRadius: "0.7rem", display: "flex", justifyContent: "center", alignItems: "center" }}>

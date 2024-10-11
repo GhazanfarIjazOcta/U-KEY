@@ -267,7 +267,7 @@ export default function MachinesTableContent() {
                                         alignItems: "center",
                                     }}
                                 >
-                                    <Typography sx={{ color: "#F38712", fontSize: "0.9rem", fontFamily: "Inter", textDecoration: "underline", cursor: "pointer" }}  >
+                                    <Typography sx={{ color: "#F38712", fontSize: "0.9rem", fontFamily: "Inter", textDecoration: "underline", cursor: "pointer", whiteSpace: "nowrap" }}  >
                                         {/* {row.totalMachines} */}
                                         View Images
                                     </Typography>

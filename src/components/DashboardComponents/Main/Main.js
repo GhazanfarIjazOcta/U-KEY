@@ -23,7 +23,7 @@ export default function Main() {
 
         <Box sx={{
             flexGrow: 1, position: 'absolute',
-            mt: { xs: 2, sm: 2, md: 5, lg: 5 },
+            mt: { xs: 0, sm: 0, md: 0, lg: 5 },
             overflowY: "auto",
             height: "85vh",
             background: "#F4F7F7",
@@ -34,32 +34,34 @@ export default function Main() {
             <Grid2
                 container
                 spacing={1}
-                mt={2}
+                mt={1}
                 pr={{ lg: 2 }}
                 columns={{ xs: 12, sm: 12, md: 12, lg: 12 }}
             >
 
 
                 <Grid2 container size={{ xs: 12, sm: 12, md: 6.5 }}>
-                    <Grid2 size={{ xs: 12, sm: 5, md: 5 }} >
-                        <TotalCard
-                            icon={"CompaniesIcon"}
-                            title={"Total Companies"}
-                            totalNumber={"06"}
-                            activeNumber={"13"}
-                            inactiveNumber={"13"}
-                            maintenanceNumber={null}
-                        />
-                    </Grid2>
-                    <Grid2 size={{ xs: 12, sm: 7, md: 7 }} >
-                        <TotalCard
-                            icon={"MachinesIcon"}
-                            title={"Total Machines"}
-                            totalNumber={"06"}
-                            activeNumber={"13"}
-                            inactiveNumber={"13"}
-                            maintenanceNumber={"12"}
-                        />
+                    <Grid2 container spacing={1} style={{ display: 'flex', alignItems: 'stretch', margin: 0, }}>
+                        <Grid2 item size={{ xs: 12, sm: 5, md: 5 }} style={{ display: 'flex', padding: 0, }}>
+                            <TotalCard
+                                icon={"CompaniesIcon"}
+                                title={"Total Companies"}
+                                totalNumber={"06"}
+                                activeNumber={"13"}
+                                inactiveNumber={"13"}
+                                maintenanceNumber={null}
+                            />
+                        </Grid2>
+                        <Grid2 item size={{ xs: 12, sm: 7, md: 7 }} style={{ display: 'flex', padding: 0, }}>
+                            <TotalCard
+                                icon={"MachinesIcon"}
+                                title={"Total Machines"}
+                                totalNumber={"06"}
+                                activeNumber={"13"}
+                                inactiveNumber={"13"}
+                                maintenanceNumber={"12"}
+                            />
+                        </Grid2>
                     </Grid2>
 
                     <Grid2 size={{ xs: 12, sm: 12, md: 12 }}>

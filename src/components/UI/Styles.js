@@ -4,7 +4,7 @@ export const RegistrationStyles = {
         '& .MuiInputBase-root.MuiOutlinedInput-root': {
             borderRadius: "0.2rem",
             border: '1px solid #DCE0E5',
-            backgroundColor: "white",
+            backgroundColor: 'rgba(255, 255, 255, 1)',
             fontSize: "0.8rem",
             color: "#14181F",
             fontFamily: 'Inter',

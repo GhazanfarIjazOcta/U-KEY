@@ -9,7 +9,7 @@ import {
 import React, { useState } from "react";
 import LoginImg from "../../../assets/Registration/Login.png";
 
-import Ukeylogo from "../../../assets/Registration/UkeyLogo.png";
+import Ukeylogo from "../../../assets/Registration/UkeyLogoRegistration.png";
 import GoogleLogo from "../../../assets/Registration/Google.svg";
 import { useNavigate } from "react-router-dom";
 import { RegistrationStyles } from "../../UI/Styles";
@@ -51,7 +51,7 @@ function Login() {
                 alignItems="center"
                 justifyContent="center"
 
-                sx={{ width: { lg: "45%", md: "50%", sm: "100%", xs: "100%" }, opacity: "95%", background: "#FFF", height: "100vh", }} >
+                sx={{ width: { lg: "45%", md: "50%", sm: "100%", xs: "100%" }, opacity: "95%", background: "#F5F7F9", height: "100vh", }} >
                 <Box sx={{ paddingBottom: "2.5rem", }}>
                     <img src={Ukeylogo} height={"70px"} width={"143px"} />
                 </Box>

@@ -17,10 +17,9 @@ export default function Machines() {
       position: "absolute",
       mt: { xs: 5, sm: 5, md: 5, lg: 5 },
       // Adjust padding based on the screen size
-      px: { xs: 2, sm: 2, md: 2, lg: 0 }, // Remove padding at larger screens where sidebar becomes toggle
-      ml: { xs: 0, sm: 0, md: 0, lg: 0, xl: 0 }, // Leave space for the sidebar on larger screens
+
       overflow: "none", // Prevent overflowing horizontally and vertically
-      width: { lg: "82%", xs: "95%" }, // Ensure it takes full width
+      width: { lg: "82%", xs: "100%" }, // Ensure it takes full width
     }} >
 
       {/* <Grid container
@@ -61,7 +60,7 @@ export default function Machines() {
       <TablePagination count={5} currentPageResults={3} /> */}
 
 
-      <Box sx={{ padding: { lg: "1rem 4rem 1rem 1rem", xs: "1rem 1rem 1rem 1rem" }, marginRight: "2rem", background: "#FFF", }}>
+      <Box sx={{ padding: { lg: "1rem 4rem 1rem 1rem", xs: "1rem 1rem 1rem 1rem" }, marginRight: { sm: "2rem", xs: "0rem" }, background: "#FFF", }}>
         <Box sx={{ display: "flex", gap: "1.5rem", alignItems: "center" }}>
           <Box sx={{ width: 44, height: 40, background: "#FEF2E5", borderRadius: "0.7rem", display: "flex", justifyContent: "center", alignItems: "center" }}> <img src={MachinesIcon} /> </Box>
           <Typography sx={{ fontFamily: "Poppins", fontSize: "0.8rem", color: "#909097" }}>
