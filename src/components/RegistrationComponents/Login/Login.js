@@ -198,7 +198,6 @@
 // export default Login;
 
 
-
 import {
     Box,
     Button,
@@ -217,9 +216,8 @@ import "../../UI/Styles.css"
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined';
 
-// Import Firebase functions
-import { auth, signInWithEmailAndPassword } from "../../../firebase"; // Adjust path to your firebase.js file
-import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+// Firebase imports
+import { auth, signInWithEmailAndPassword, rtdb, ref, get, child } from "../../../firebase";
 
 function Login() {
     const navigate = useNavigate();
@@ -227,18 +225,56 @@ function Login() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState(null);
-
     const [loading, setLoading] = useState(false);
 
     const togglePasswordVisibility = () => {
         setPasswordVisible(!passwordVisible);
     };
 
-    const handleLogin = async () => {
-        setLoading(true);  // Set loading to true
+    // Fetch user role and organizationId from Realtime Database
+    const getUserData = async (userId) => {
+        const userRef = ref(rtdb, `users/${userId}`);
         try {
-            await signInWithEmailAndPassword(auth, email, password);
-            navigate("/dashboard");
+            const snapshot = await get(userRef);
+            if (snapshot.exists()) {
+                const userData = snapshot.val();
+                return {
+                    organizationID: userData.organizationID,
+                    role: userData.role,
+                };
+            } else {
+                console.error("No user data found!");
+                return null;
+            }
+        } catch (error) {
+            console.error("Error fetching user data:", error);
+            return null;
+        }
+    };
+
+    const handleLogin = async () => {
+        setLoading(true);
+        try {
+            // Sign in with Firebase
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
+
+            // Retrieve user role and organizationId
+            const userData = await getUserData(user.uid);
+            if (userData) {
+                console.log("User Data:", userData);
+
+                // Example: Navigate based on role
+                if (userData.role === "admin") {
+                    navigate("/dashboard");
+                } else if (userData.role === "user") {
+                    navigate("/user-dashboard");
+                } else {
+                    navigate("/dashboard");
+                }
+            } else {
+                setError("Failed to retrieve user data.");
+            }
         } catch (error) {
             if (error.code === "auth/wrong-password") {
                 setError("Incorrect password. Please try again.");
@@ -248,24 +284,9 @@ function Login() {
                 setError("An unexpected error occurred. Please try again.");
             }
         } finally {
-            setLoading(false);  // Reset loading state
+            setLoading(false);
         }
     };
-
-
-
-const handleGoogleLogin = async () => {
-    const provider = new GoogleAuthProvider();
-    try {
-        const result = await signInWithPopup(auth, provider);
-        navigate("/dashboard");
-    } catch (error) {
-        console.error(error.message);
-        setError("An error occurred while logging in with Google.");
-    }
-};
-
-    
 
     const signupNavigation = () => {
         navigate("/signup");
@@ -285,46 +306,37 @@ const handleGoogleLogin = async () => {
                 flexDirection="column"
                 alignItems="center"
                 justifyContent="center"
-                sx={{ width: { lg: "45%", md: "50%", sm: "100%", xs: "100%" }, opacity: "95%", background: "#F5F7F9", height: "100vh", }}>
-                <Box sx={{ paddingBottom: "2.5rem", }}>
+                sx={{ width: { lg: "45%", md: "50%", sm: "100%", xs: "100%" }, opacity: "95%", background: "#F5F7F9", height: "100vh" }}>
+
+                <Box sx={{ paddingBottom: "2.5rem" }}>
                     <img src={Ukeylogo} height={"70px"} width={"143px"} />
                 </Box>
 
                 <Typography
                     variant="h1"
                     mt={"1em"}
-                    sx={{ fontWeight: 600, fontSize: "1.675rem", fontFamily: "Inter", color: "#14181F", }}
+                    sx={{ fontWeight: 600, fontSize: "1.675rem", fontFamily: "Inter", color: "#14181F" }}
                 >
                     Login
                 </Typography>
                 <Typography
-                    mt="1.6em" sx={{ fontSize: "1rem", fontFamily: "Inter", color: "#14181F", textAlign: "center" }} >
+                    mt="1.6em"
+                    sx={{ fontSize: "1rem", fontFamily: "Inter", color: "#14181F", textAlign: "center" }}
+                >
                     If you don't have an account register
                 </Typography>
                 <Stack direction={"row"} gap={2}>
                     <Typography
                         color={"#F38712"}
-                        style={{
-                            fontWeight: 600,
-                            fontSize: "1rem",
-                            fontFamily: "Inter",
-                            cursor: "pointer",
-                        }}
+                        style={{ fontWeight: 600, fontSize: "1rem", fontFamily: "Inter", cursor: "pointer" }}
                         onClick={signupNavigation}
                     >
-                        Register here !
+                        Register here!
                     </Typography>
                 </Stack>
+
                 <Box sx={{ width: { xs: "80%", sm: "60%" }, maxWidth: "370px", pt: "1.5rem" }}>
-                    <Typography
-                        variant="subtitle1"
-                        sx={{
-                            fontWeight: 500,
-                            fontSize: "0.8rem",
-                            fontFamily: "Inter",
-                            color: "#14181F",
-                        }}
-                    >
+                    <Typography variant="subtitle1" sx={{ fontWeight: 500, fontSize: "0.8rem", fontFamily: "Inter", color: "#14181F" }}>
                         E-mail/Phone Number
                     </Typography>
                     <TextField
@@ -333,18 +345,12 @@ const handleGoogleLogin = async () => {
                         size="small"
                         placeholder="Enter your email or phone number"
                         value={email}
-                        onChange={(e) => setEmail(e.target.value)} // Store email in state
+                        onChange={(e) => setEmail(e.target.value)}
                     />
                 </Box>
+
                 <Box sx={{ width: { xs: "80%", sm: "60%" }, maxWidth: "370px", position: "relative" }}>
-                    <Typography
-                        variant="subtitle1"
-                        sx={{
-                            fontWeight: 500, fontSize: "0.8rem",
-                            fontFamily: "Inter",
-                            color: "#14181F",
-                        }}
-                    >
+                    <Typography variant="subtitle1" sx={{ fontWeight: 500, fontSize: "0.8rem", fontFamily: "Inter", color: "#14181F" }}>
                         Password
                     </Typography>
                     <TextField
@@ -354,48 +360,11 @@ const handleGoogleLogin = async () => {
                         placeholder="Enter your password"
                         type={passwordVisible ? 'text' : 'password'}
                         value={password}
-                        onChange={(e) => setPassword(e.target.value)} // Store password in state
+                        onChange={(e) => setPassword(e.target.value)}
                     />
-                    <Box
-                        sx={RegistrationStyles.passwordEyeBox}
-                        onClick={togglePasswordVisibility}
-                    >
+                    <Box sx={RegistrationStyles.passwordEyeBox} onClick={togglePasswordVisibility}>
                         {passwordVisible ? <VisibilityOffOutlinedIcon /> : <VisibilityOutlinedIcon />}
                     </Box>
-                </Box>
-
-                <Box
-                    sx={{
-                        width: { xs: "80%", sm: "60%" },
-                        maxWidth: "370px",
-                        alignItems: "center",
-                        display: "flex",
-                        justifyContent: "space-between",
-                    }}
-                >
-                    <Stack direction={"row"} alignItems={"center"}>
-                        <Checkbox size="small" />
-                        <Typography
-                            color={"#14181F"}
-                            style={{
-                                fontWeight: 300,
-                                fontFamily: "Poppins",
-                                fontSize: "0.75rem",
-                            }}
-                        >
-                            Remember me
-                        </Typography>
-                    </Stack>
-                    <Typography
-                        color={"#6F7C8E"}
-                        style={{
-                            fontWeight: 300,
-                            fontFamily: "Poppins",
-                            fontSize: "0.75rem",
-                        }}
-                    >
-                        Forgot Password ?
-                    </Typography>
                 </Box>
 
                 <Button
@@ -408,42 +377,17 @@ const handleGoogleLogin = async () => {
                         color: "white",
                         marginTop: "1.8em",
                         textTransform: "none",
-                        "&:hover": {
-                            backgroundColor: "#212122",
-                        },
                     }}
-                    onClick={handleLogin} // Trigger Firebase login
+                    onClick={handleLogin}
+                    disabled={loading}
                 >
-                    {/* Login */}
                     {loading ? "Logging in..." : "Login"}
                 </Button>
 
-                {/* Display error message if login fails */}
-                {error && <Typography color="error" sx={{ mt: 2, fontSize: "0.875rem" }}>{error}</Typography>}
-
-                <Typography
-                    variant="body1"
-                    mt={2}
-                    mb={1}
-                    color={"#6F7C8E"}
-                    style={{
-                        fontWeight: 500,
-                        fontSize: "1rem",
-                        fontFamily: "Poppins",
-                        cursor: "pointer",
-                        marginTop: "2rem"
-                    }}
-                >
-                    or continue with
-                </Typography>
-                <Stack mt={1} onClick={handleGoogleLogin} sx={{ cursor: 'pointer' }}>
-    <img src={GoogleLogo} alt="Google login" />
-</Stack>
-
+                {error && <Typography color="error" variant="body2" sx={{ marginTop: "1rem" }}>{error}</Typography>}
             </Box>
-        </Box >
+        </Box>
     );
 }
 
 export default Login;
-

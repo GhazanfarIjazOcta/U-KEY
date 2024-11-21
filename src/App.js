@@ -45,6 +45,7 @@
 import React, { Suspense, lazy } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Loader from "./components/UI/Loader";
+import AddUser from "./components/DashboardComponents/User Managment/AddUser";
 
 // Lazy load the components
 const Signup = lazy(() => import("./pages/Signup/Signup"));
@@ -72,6 +73,7 @@ function App() {
 
           {/* Dashboard Routes */}
           <Route path="/dashboard" element={<Dashboard />}>
+
             <Route index element={<Main />} />
             <Route path="user-management" element={<UserManagement />} />
             <Route path="job-sites" element={<JobSites />} />
@@ -79,6 +81,10 @@ function App() {
             <Route path="machines" element={<Machines />} />
             <Route path="operators" element={<Operators />} />
             <Route path="maintenance" element={<Maintenance />} />
+
+
+
+            <Route path="user-management/add-user" element={<AddUser />} />
           </Route>
         </Routes>
       </Suspense>

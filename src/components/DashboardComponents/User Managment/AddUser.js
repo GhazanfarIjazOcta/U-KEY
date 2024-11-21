@@ -9,9 +9,9 @@ import {
   Typography,
 } from "@mui/material";
 import React from "react";
-import { loginLeftContentContainerItemWidth } from "../UI/styles/Login";
-import Arrowdown from "../../assets/Card/fi_chevron-down.png";
-import { addUserStyles } from "../UI/styles/Main";
+import { loginLeftContentContainerItemWidth } from "../../UI/styles/Login";
+import Arrowdown from "../../../assets/Card/fi_chevron-down.png";
+import { addUserStyles } from "../../UI/Main";
 
 function AddUser() {
   return (

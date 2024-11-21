@@ -237,8 +237,6 @@
 
 
 
-
-
 import React, { useState } from "react";
 import {
     Box,
@@ -298,6 +296,9 @@ function Signup() {
             // Register user in Firebase Authentication
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     
+            // Generate a random organization ID for each new signup
+            const organizationID = Math.random().toString(36).substring(2, 15); // Random alphanumeric string
+    
             // Store additional user data in Realtime Database
             const userData = {
                 name,
@@ -306,13 +307,22 @@ function Signup() {
                 organizationName,
                 organizationAddress,
                 status: "inactive",  // Set status here if required
-                role: "admin",
+                role: "admin",  // Default role
+                organizationID: organizationID
             };
     
             // Save user data in the Realtime Database
             const userRef = ref(rtdb, 'users/' + userCredential.user.uid);
             await set(userRef, userData);
             
+            // Save organization data if necessary
+            const organizationRef = ref(rtdb, 'organizations/' + organizationID);
+            await set(organizationRef, {
+                name: organizationName,
+                address: organizationAddress,
+                users: [userCredential.user.uid] // You can add the first user to the organization here
+            });
+
             // Navigate to dashboard on success
             alert("Registration successful!");
             navigate("/dashboard");
@@ -422,3 +432,4 @@ function Signup() {
 }
 
 export default Signup;
+

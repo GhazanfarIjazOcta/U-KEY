@@ -56,7 +56,7 @@ export default function UserManagment() {
             text={"User Management"}
             searchText={"User name"}
             buttonText={"Add User"}
-            route={"/add-user"}
+            route={"add-user"}
           />
         </Box>
 
