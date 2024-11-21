@@ -10,9 +10,13 @@ import TableHeader from "../TableHeader/TableHeader";
 import TableContent from "../Table/UserManagmentTableContent";
 import TablePagination from "../Pagination/TablePagination";
 
+import { auth } from "../../../firebase";
+
+
 export default function UserManagment() {
   const sidebarWidth = 12; // Adjust this based on your sidebar's width
 
+  console.log("here is the user info " , auth.currentUser)
   return (
     <Box
       sx={{

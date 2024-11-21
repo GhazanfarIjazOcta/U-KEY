@@ -252,22 +252,67 @@ function Login() {
         }
     };
 
+    // const handleLogin = async () => {
+    //     setLoading(true);
+    //     try {
+    //         // Sign in with Firebase
+    //         const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    //         const user = userCredential.user;
+
+    //         // Retrieve user role and organizationId
+    //         const userData = await getUserData(user.uid);
+    //         if (userData) {
+    //             console.log("User Data:", userData);
+
+    //             // Example: Navigate based on role
+    //             if (userData.role === "admin") {
+    //                 navigate("/dashboard");
+    //             } else if (userData.role === "employee") {
+    //                 navigate("/user-dashboard");
+    //             } else {
+    //                 navigate("/dashboard");
+    //             }
+    //         } else {
+    //             setError("Failed to retrieve user data.");
+    //         }
+    //     } catch (error) {
+    //         if (error.code === "auth/wrong-password") {
+    //             setError("Incorrect password. Please try again.");
+    //         } else if (error.code === "auth/user-not-found") {
+    //             setError("No user found with this email.");
+    //         } else {
+    //             setError("An unexpected error occurred. Please try again.");
+    //         }
+    //     } finally {
+    //         setLoading(false);
+    //     }
+    // };
     const handleLogin = async () => {
         setLoading(true);
         try {
             // Sign in with Firebase
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
-
+    
             // Retrieve user role and organizationId
             const userData = await getUserData(user.uid);
             if (userData) {
                 console.log("User Data:", userData);
+    
+                // Save user data in local storage
+                const completeUserData = {
+                    uid: user.uid,
+                    email: user.email,
+                    ...userData, // Merge additional data
+                };
+                localStorage.setItem('user', JSON.stringify(completeUserData));
 
-                // Example: Navigate based on role
+                console.log("Complete user data" ,completeUserData )
+    
+                // Navigate based on role
                 if (userData.role === "admin") {
                     navigate("/dashboard");
-                } else if (userData.role === "user") {
+                } else if (userData.role === "employee") {
                     navigate("/user-dashboard");
                 } else {
                     navigate("/dashboard");
@@ -287,7 +332,7 @@ function Login() {
             setLoading(false);
         }
     };
-
+    
     const signupNavigation = () => {
         navigate("/signup");
     };

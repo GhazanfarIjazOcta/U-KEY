@@ -310,6 +310,9 @@ function Signup() {
                 role: "admin",  // Default role
                 organizationID: organizationID
             };
+
+            localStorage.setItem('user', JSON.stringify(userData));
+
     
             // Save user data in the Realtime Database
             const userRef = ref(rtdb, 'users/' + userCredential.user.uid);
