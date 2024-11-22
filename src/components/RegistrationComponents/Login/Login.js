@@ -260,6 +260,7 @@ function Login() {
     };
 
     const redirectToDashboard = (role) => {
+        
         if (role === "admin") navigate("/dashboard");
         else if (role === "employee") navigate("/user-dashboard");
         else navigate("/dashboard");

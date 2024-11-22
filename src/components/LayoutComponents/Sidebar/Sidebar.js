@@ -28,9 +28,15 @@ import {
 import { useNavigate } from "react-router-dom";
 
 import { signOut, getAuth } from "firebase/auth";
-
+import { useUser } from "../../../Context/UserContext";
 
 function Sidebar() {
+
+
+  const { user, updateUserData } = useUser(); // Destructure user data from context
+  console.log("user role is " , user.role)
+  // const { storedUser } = useAuth();
+  // console.log("user role is actually on sidebar ", storedUser);
   const navigate = useNavigate();
   const [selectedItem, setSelectedItem] = useState(null);
 
@@ -65,6 +71,25 @@ function Sidebar() {
     { text: "Job Sites", icon: JobLogo, selectedIcon: SelectedJobLogo, route: "job-sites" },
     { text: "Maintenance", icon: MaintenanceLogo, selectedIcon: SelectedMaintenanceLogo, route: "maintenance", },
   ];
+
+  const AdminlistItems = [
+    { text: "Dashboard", icon: DashboardLogo, selectedIcon: SelectedDashboardLogo, route: "/dashboard" },
+
+    { text: "Users", icon: UserLogo, selectedIcon: SelectedUserLogo, route: "user-management" },
+    { text: "Machines", icon: MachinesLogo, selectedIcon: SelectedMachinesLogo, route: "machines", },
+    { text: "Operators", icon: OperatorsLogo, selectedIcon: SelectedOperatorLogo, route: "operators", },
+    { text: "Job Sites", icon: JobLogo, selectedIcon: SelectedJobLogo, route: "job-sites" },
+    { text: "Maintenance", icon: MaintenanceLogo, selectedIcon: SelectedMaintenanceLogo, route: "maintenance", },
+  ]
+
+  const CustomerlistItems = [
+
+    
+  ]
+
+  // Conditionally set the list items based on the userRole
+  const listToRender = user.role === "superAdmin" ? listItems : AdminlistItems;
+
   return (
     <Box
       flex={2}
@@ -114,7 +139,7 @@ function Sidebar() {
         >
           <Box sx={listStyle} mt={"1rem"}>
             <List>
-              {listItems.map((item, index) => (
+              {listToRender.map((item, index) => (
                 <ListItem
                   button
                   key={item.text}
