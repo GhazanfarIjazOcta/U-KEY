@@ -52,6 +52,8 @@ function Sidebar() {
         
         // Remove user data from localStorage (if any)
         localStorage.removeItem('user');
+        localStorage.clear();
+
         
         // Optionally, navigate to a login page after logging out
         navigate("/login");
