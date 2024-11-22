@@ -30,7 +30,9 @@ import SidebarMobile from "../SidebarMobile/SidebarMobile";
 
 import { useUser } from "../../../Context/UserContext";
 
-import { signOut, getAuth } from "firebase/auth";
+// import  { useContext } from 'react';
+// import { UserContext } from '../../../context/UserContext';
+
 
 
 const Search = styled("div")(({ theme }) => ({
@@ -79,6 +81,8 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
 }));
 
 export default function Navbar() {
+
+  // const { user, setUser } = useContext(UserContext);
 
   const { user, updateUserData } = useUser(); // Destructure user data from context
   const [headerMessage, setHeaderMessage] = React.useState(

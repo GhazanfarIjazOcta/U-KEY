@@ -6,7 +6,7 @@ import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Paper from "@mui/material/Paper";
-import { Box, Stack, Typography } from "@mui/material";
+import { Box, Stack,  Typography } from "@mui/material";
 import { TableStyles } from "../../UI/Styles";
 import { getDatabase, ref, get, update, remove } from "firebase/database";
 import { getAuth, deleteUser } from "firebase/auth"; // Import deleteUser from Firebase Authentication
@@ -16,47 +16,37 @@ import { auth } from "../../../firebase"; // Firebase auth instance
 
 import Edit from "../../../assets/Table/Edit.png";
 import Delete from "../../../assets/Table/Delete.png";
+
+import Switch from '@mui/material/Switch'; // For default export
+
+
+// Function to create a row
 function createData(
   companyName,
   totalMachines,
-  tableotalOperators,
+  totalOperators,
   activeJobSites,
-  Users,
+  users,
   subscriptionStatus,
-  Action
+  action
 ) {
   return {
     companyName,
     totalMachines,
-    tableotalOperators,
+    totalOperators,
     activeJobSites,
-    Users,
+    users,
     subscriptionStatus,
-    Action,
+    action,
   };
 }
 
 const rows = [
-  createData(
-    "OT Tech",
-    "123",
-    "643",
-    "345",
-    "345",
-    "Active"
-  ),
-  createData(
-    "OT Pro",
-    "123",
-    "643",
-    "345",
-    "345",
-    "Deactive"
-  ),
+  createData("OT Tech", "123", "643", "345", "345", "Active"),
+  createData("OT Pro", "123", "643", "345", "345", "Deactive"),
 ];
 
 export default function CompaniesTableContent() {
-
   const [organizations, setOrganizations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -67,9 +57,9 @@ export default function CompaniesTableContent() {
       if (user) {
         try {
           const db = getDatabase();
-          const organizationsRef = ref(db, 'organizations');
+          const organizationsRef = ref(db, "organizations");
           const snapshot = await get(organizationsRef);
-          
+
           if (snapshot.exists()) {
             const orgData = snapshot.val();
             const orgList = Object.keys(orgData).map((key) => ({
@@ -93,6 +83,26 @@ export default function CompaniesTableContent() {
     return () => unsubscribe();
   }, [navigate]);
 
+  // Handle activating/deactivating an organization
+  // const handleActivateDeactivate = async (organizationId, status) => {
+  //   try {
+  //     const db = getDatabase();
+  //     const orgRef = ref(db, "organizations/" + organizationId);
+  //     await update(orgRef, {
+  //       subscriptionStatus: status === "active" ? "inactive" : "Active",
+  //     });
+  //     setOrganizations((prev) =>
+  //       prev.map((org) =>
+  //         org.id === organizationId
+  //           ? { ...org, subscriptionStatus: status === "active" ? "inactive" : "Active" }
+  //           : org
+  //       )
+  //     );
+  //   } catch (err) {
+  //     setError("Error updating status.");
+  //   }
+  // };
+
   const handleActivateDeactivate = async (organizationId, status) => {
     try {
       const db = getDatabase();
@@ -110,27 +120,23 @@ export default function CompaniesTableContent() {
     }
   };
 
+  // Handle deleting an organization and its associated users
   const handleDeleteOrganization = async (organizationId, users) => {
     try {
       const db = getDatabase();
-      const authInstance = getAuth(); // Get Firebase Auth instance
-      
+      const authInstance = getAuth();
+
       // Delete all users from the 'users' node
       users.forEach(async (userId) => {
-        const userRef = ref(db, 'users/' + userId);
-        await remove(userRef); // Remove user from the database
+        const userRef = ref(db, "users/" + userId);
+        await remove(userRef);
 
-        // If you're on the backend (Firebase Functions), you would use Admin SDK here:
         try {
-          // On the client-side, you can delete the logged-in user using deleteUser()
+          // If current user is being deleted
           const currentUser = authInstance.currentUser;
-
           if (currentUser && currentUser.uid === userId) {
             await deleteUser(currentUser); // Deletes the logged-in user
             console.log(`User with UID: ${userId} deleted from Firebase Authentication.`);
-          } else {
-            // To delete another user, use Firebase Admin SDK in Cloud Functions (not client-side)
-            console.log(`Error: User with UID ${userId} should be deleted from the Admin SDK (not client-side).`);
           }
         } catch (authError) {
           console.log(`Error deleting user from Firebase Authentication: ${authError.message}`);
@@ -138,7 +144,7 @@ export default function CompaniesTableContent() {
       });
 
       // Delete the organization from the 'organizations' node
-      const orgRef = ref(db, 'organizations/' + organizationId);
+      const orgRef = ref(db, "organizations/" + organizationId);
       await remove(orgRef);
 
       // Update the UI by removing the deleted organization
@@ -158,11 +164,6 @@ export default function CompaniesTableContent() {
     return <div>Error: {error}</div>;
   }
 
-
-
-
-
-
   return (
     <TableContainer
       sx={{
@@ -177,205 +178,97 @@ export default function CompaniesTableContent() {
       <Table sx={{ minWidth: 650 }} aria-label="simple table">
         <TableHead sx={{ backgroundColor: "#FCFCFD" }}>
           <TableRow>
-            <TableCell align="right">
-              <Stack
-                direction={"row"}
-                gap={1}
-                sx={{ width: "100%", justifyContent: "center" }}
-              >
-                <Typography sx={TableStyles.headingStyle}>
-
-                  Company Name
-                </Typography>
-              </Stack>
+            <TableCell align="center">
+              <Typography sx={TableStyles.headingStyle}>Company Name</Typography>
             </TableCell>
             <TableCell align="center">
-              <Stack
-                direction={"row"}
-                gap={1}
-                sx={{ width: "100%", justifyContent: "center" }}
-              >
-                <Typography sx={TableStyles.headingStyle}>
-
-                  Total Machines
-                </Typography>
-              </Stack>
+              <Typography sx={TableStyles.headingStyle}>Total Machines</Typography>
             </TableCell>
             <TableCell align="center">
-              <Stack
-                direction={"row"}
-                gap={1}
-                sx={{ width: "100%", justifyContent: "center" }}
-              >
-                <Typography sx={TableStyles.headingStyle}>
-
-                  Total Operators
-                </Typography>
-              </Stack>
+              <Typography sx={TableStyles.headingStyle}>Total Operators</Typography>
             </TableCell>
             <TableCell align="center">
-              <Stack
-                direction={"row"}
-                gap={1}
-                sx={{ width: "100%", justifyContent: "center" }}
-              >
-                <Typography sx={TableStyles.headingStyle}>
-
-                  Active Job Sites
-                </Typography>
-              </Stack>
+              <Typography sx={TableStyles.headingStyle}>Active Job Sites</Typography>
             </TableCell>
             <TableCell align="center">
-              <Stack
-                direction={"row"}
-                gap={1}
-                sx={{ width: "100%", justifyContent: "center" }}
-              >
-                <Typography sx={TableStyles.headingStyle}>
-
-                  Users
-                </Typography>
-              </Stack>
+              <Typography sx={TableStyles.headingStyle}>Users</Typography>
             </TableCell>
             <TableCell align="center">
-              <Stack
-                direction={"row"}
-                gap={1}
-                sx={{ width: "100%", justifyContent: "center" }}
-              >
-                <Typography sx={TableStyles.headingStyle}>
-
-                  Subscription Status
-                </Typography>
-              </Stack>
+              <Typography sx={TableStyles.headingStyle}>Subscription Status</Typography>
             </TableCell>
-
             <TableCell align="center">
-              <Stack
-                direction={"row"}
-                gap={1}
-                sx={{ width: "100%", justifyContent: "center" }}
-              >
-                <Typography sx={TableStyles.headingStyle}>
-
-                  Action
-                </Typography>
-              </Stack>
+              <Typography sx={TableStyles.headingStyle}>Action</Typography>
             </TableCell>
           </TableRow>
-        </TableHead>
+        </TableHead>   
+
+
         <TableBody>
-          {rows.map((row) => (
-            <TableRow
-              key={row.UserID}
-              sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
-            >
-              <TableCell
-                component="th"
-                scope="row"
-                align="center"
-                sx={{ margin: "0px", padding: "15px" }}
-              >
-                <Typography sx={TableStyles.textStyle} >
-
-                  {row.companyName}
-
-                </Typography>
-              </TableCell>
-              <TableCell align="center" sx={{ margin: "0px", padding: "15px" }}>
-                <Stack
-                  direction={"row"}
-                  gap={1}
+          {organizations.map((organization) => (
+            <TableRow key={organization.id}>
+              <TableCell align="center">{organization.name}</TableCell>
+              <TableCell align="center">{organization.address}</TableCell>
+              <TableCell align="center">{organization.totalOperators}</TableCell>
+              <TableCell align="center">{organization.activeJobSites}</TableCell>
+              <TableCell align="center">{organization.users}</TableCell>
+              <TableCell align="center">
+                <Box
                   sx={{
-                    width: "100%",
-                    justifyContent: "center",
+                    width: "80px",
+                    height: "25px",
+                    backgroundColor: organization.status === "active" ? "#ECFDF3" : "#F2F4F7",
+                    borderRadius: "40%",
+                    display: "flex",
                     alignItems: "center",
+                    justifyContent: "center",
+                    gap: "10px",
                   }}
                 >
-                  <Typography sx={TableStyles.textStyle} >
-
-                    {row.totalMachines}
+                  <Box
+                    sx={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: "50%",
+                      backgroundColor: organization.status === "active" ? "#28A745" : "#6C757D",
+                    }}
+                  />
+                  <Typography
+                    fontWeight={500}
+                    fontSize={"14px"}
+                    sx={{
+                      color: organization.status === "active" ? "#037847" : "#364254",
+                    }}
+                    fontFamily={"Inter"}
+                  >
+                    {organization.status}
                   </Typography>
-                </Stack>
+                </Box>
               </TableCell>
-              <TableCell align="center" sx={{ margin: "0px", padding: "15px" }}>
-                <Stack
-                  direction={"row"}
-                  gap={1}
-                  sx={{
-                    width: "100%",
-                    justifyContent: "center",
-                    alignItems: "center",
-                  }}
-                >
-                  <Typography sx={TableStyles.textStyle} >
-
-                    {row.tableotalOperators}
-
-
-                  </Typography>
-                </Stack>
-              </TableCell>
-              <TableCell align="center" sx={{ margin: "0px", padding: "15px" }}>
-                <Stack
-                  direction={"row"}
-                  gap={1}
-                  sx={{
-                    width: "100%",
-                    justifyContent: "center",
-                    alignItems: "center",
-                  }}
-                >
-                  <Typography sx={TableStyles.textStyle} >
-
-                    {row.activeJobSites}
-
-
-                  </Typography>
-                </Stack>
-              </TableCell>
-              <TableCell align="center" sx={{ margin: "0px", padding: "15px" }}>
-                <Stack
-                  direction={"row"}
-                  gap={1}
-                  sx={{
-                    width: "100%",
-                    justifyContent: "center",
-                    alignItems: "center",
-                  }}
-                >
-                  <Typography sx={TableStyles.textStyle} >
-
-                    {row.Users}
-
-
-                  </Typography>
-                </Stack>
-              </TableCell>
-
-
-              <TableCell align="center" sx={{ margin: "0px", padding: "15px" }}>
-                <Stack
-                  direction={"row"}
-                  justifyContent={"center"}
-                  sx={{ width: "100%" }}
-                >
-                  <Typography sx={{ ...TableStyles.textStyle, color: row.subscriptionStatus == "Active" ? "#28A745" : "#DC3545" }} >
-
-                    {row.subscriptionStatus}
-
-                  </Typography>
-                </Stack>
-              </TableCell>
-
-              <TableCell align="center" sx={{ margin: "0px", padding: "15px" }}>
-                <Stack
-                  direction={"row"}
-                  gap={2}
-                  sx={{ width: "100%", justifyContent: "center" }}
-                >
-                  <img src={Edit} width={"24px"} height={"24px"} />
-                  <img src={Delete} width={"24px"} height={"24px"} />
+              <TableCell align="center">
+                <Stack direction={"row"} gap={2} justifyContent="center">
+                  {/* <img
+                    src={Edit}
+                    width="24px"
+                    height="24px"
+                    style={{ cursor: "pointer" }}
+                    alt="Edit"
+                    onClick={() => handleActivateDeactivate(organization.id, organization.status) }
+                  /> */}
+                <Switch
+    checked={organization.status === 'active'} // Determines if the status is active
+    onChange={() => handleActivateDeactivate(organization.id, organization.status)} // Toggle function
+    color={organization.status === 'active' ? 'success' : 'error'} // Green for active, red for inactive
+    inputProps={{ 'aria-label': 'toggle organization status' }} // Accessibility
+  />
+                  <img
+                    src={Delete}
+                    width="24px"
+                    height="24px"
+                    onClick={() => handleDeleteOrganization(organization.id, organization.users)}
+                    
+                    style={{ cursor: "pointer" }}
+                    alt="Delete"
+                  />
                 </Stack>
               </TableCell>
             </TableRow>
