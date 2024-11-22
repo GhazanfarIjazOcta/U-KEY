@@ -12,8 +12,12 @@ import TablePagination from "../Pagination/TablePagination";
 
 import { auth } from "../../../firebase";
 
+import { useUser } from "../../../Context/UserContext";
+
 
 export default function UserManagment() {
+
+  const { user, updateUserData } = useUser(); // Destructure user data from context
   const sidebarWidth = 12; // Adjust this based on your sidebar's width
 
   console.log("here is the user info " , auth.currentUser)
@@ -43,6 +47,7 @@ export default function UserManagment() {
         <Grid item xs={13} sm={6} md={2.98} sx={{ flexShrink: 1 }}>
           <OutlinedCard text={"All Users"} icon={UserLogo} />
         </Grid>
+        
         <Grid item xs={13} sm={6} md={2.98} sx={{ flexShrink: 1 }}>
           <OutlinedCard text={"Admin"} icon={AdminLogo} />
         </Grid>

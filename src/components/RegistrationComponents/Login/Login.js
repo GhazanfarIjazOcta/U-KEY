@@ -198,26 +198,17 @@
 // export default Login;
 
 
-import {
-    Box,
-    Button,
-    Checkbox,
-    Stack,
-    TextField,
-    Typography,
-} from "@mui/material";
-import React, { useState } from "react";
+
+import React, { useState, useEffect } from "react";
+import { Box, Button, Stack, TextField, Typography } from "@mui/material";
+import { useNavigate } from "react-router-dom";
+import { auth, signInWithEmailAndPassword, rtdb, ref, get, onAuthStateChanged } from "../../../firebase";
 import LoginImg from "../../../assets/Registration/Login.png";
 import Ukeylogo from "../../../assets/Registration/UkeyLogoRegistration.png";
-import GoogleLogo from "../../../assets/Registration/Google.svg";
-import { useNavigate } from "react-router-dom";
+import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
+import VisibilityOffOutlinedIcon from "@mui/icons-material/VisibilityOffOutlined";
 import { RegistrationStyles } from "../../UI/Styles";
-import "../../UI/Styles.css"
-import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
-import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined';
-
-// Firebase imports
-import { auth, signInWithEmailAndPassword, rtdb, ref, get, child } from "../../../firebase";
+import "../../UI/Styles.css";
 
 function Login() {
     const navigate = useNavigate();
@@ -227,147 +218,117 @@ function Login() {
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(false);
 
-    const togglePasswordVisibility = () => {
-        setPasswordVisible(!passwordVisible);
-    };
+    useEffect(() => {
+        // Restore session on component mount
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+            if (user) {
+                const storedData = localStorage.getItem("user");
+                if (storedData) {
+                    const userData = JSON.parse(storedData);
+                    redirectToDashboard(userData.role);
+                }
+            }
+        });
+        return () => unsubscribe(); // Cleanup listener on unmount
+    }, []);
 
-    // Fetch user role and organizationId from Realtime Database
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                // If no user is logged in, clear the session and redirect to login
+                localStorage.removeItem('user');
+                navigate("/login");
+            }
+        });
+    
+        // Cleanup on unmount
+        return () => unsubscribe();
+    }, []);
+    
+
+    const togglePasswordVisibility = () => setPasswordVisible(!passwordVisible);
+
     const getUserData = async (userId) => {
         const userRef = ref(rtdb, `users/${userId}`);
         try {
             const snapshot = await get(userRef);
-            if (snapshot.exists()) {
-                const userData = snapshot.val();
-                return {
-                    organizationID: userData.organizationID,
-                    role: userData.role,
-                };
-            } else {
-                console.error("No user data found!");
-                return null;
-            }
+            return snapshot.exists() ? snapshot.val() : null;
         } catch (error) {
             console.error("Error fetching user data:", error);
             return null;
         }
     };
 
-    // const handleLogin = async () => {
-    //     setLoading(true);
-    //     try {
-    //         // Sign in with Firebase
-    //         const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    //         const user = userCredential.user;
+    const redirectToDashboard = (role) => {
+        if (role === "admin") navigate("/dashboard");
+        else if (role === "employee") navigate("/user-dashboard");
+        else navigate("/dashboard");
+    };
 
-    //         // Retrieve user role and organizationId
-    //         const userData = await getUserData(user.uid);
-    //         if (userData) {
-    //             console.log("User Data:", userData);
-
-    //             // Example: Navigate based on role
-    //             if (userData.role === "admin") {
-    //                 navigate("/dashboard");
-    //             } else if (userData.role === "employee") {
-    //                 navigate("/user-dashboard");
-    //             } else {
-    //                 navigate("/dashboard");
-    //             }
-    //         } else {
-    //             setError("Failed to retrieve user data.");
-    //         }
-    //     } catch (error) {
-    //         if (error.code === "auth/wrong-password") {
-    //             setError("Incorrect password. Please try again.");
-    //         } else if (error.code === "auth/user-not-found") {
-    //             setError("No user found with this email.");
-    //         } else {
-    //             setError("An unexpected error occurred. Please try again.");
-    //         }
-    //     } finally {
-    //         setLoading(false);
-    //     }
-    // };
     const handleLogin = async () => {
         setLoading(true);
         try {
-            // Sign in with Firebase
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
-    
-            // Retrieve user role and organizationId
+
             const userData = await getUserData(user.uid);
             if (userData) {
-                console.log("User Data:", userData);
-    
-                // Save user data in local storage
                 const completeUserData = {
                     uid: user.uid,
                     email: user.email,
-                    ...userData, // Merge additional data
+                    name: user.displayName || "", // Handle possible null display name
+                    ...userData,
                 };
-                localStorage.setItem('user', JSON.stringify(completeUserData));
-
-                console.log("Complete user data" ,completeUserData )
-    
-                // Navigate based on role
-                if (userData.role === "admin") {
-                    navigate("/dashboard");
-                } else if (userData.role === "employee") {
-                    navigate("/user-dashboard");
-                } else {
-                    navigate("/dashboard");
-                }
+                localStorage.setItem("user", JSON.stringify(completeUserData));
+                redirectToDashboard(userData.role);
             } else {
-                setError("Failed to retrieve user data.");
+                setError("User data not found in the database.");
             }
         } catch (error) {
-            if (error.code === "auth/wrong-password") {
-                setError("Incorrect password. Please try again.");
-            } else if (error.code === "auth/user-not-found") {
-                setError("No user found with this email.");
-            } else {
-                setError("An unexpected error occurred. Please try again.");
-            }
+            handleFirebaseErrors(error);
         } finally {
             setLoading(false);
         }
     };
-    
-    const signupNavigation = () => {
-        navigate("/signup");
+
+    const handleFirebaseErrors = (error) => {
+        if (error.code === "auth/wrong-password") {
+            setError("Incorrect password. Please try again.");
+        } else if (error.code === "auth/user-not-found") {
+            setError("No user found with this email.");
+        } else {
+            setError("An unexpected error occurred. Please try again.");
+        }
     };
 
+    const signupNavigation = () => navigate("/signup");
+
     return (
-        <Box sx={{
-            backgroundImage: `url(${LoginImg})`,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            backgroundRepeat: "no-repeat",
-            height: "100vh",
-            width: "100vw"
-        }}>
+        <Box
+            sx={{
+                backgroundImage: `url(${LoginImg})`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                backgroundRepeat: "no-repeat",
+                height: "100vh",
+                width: "100vw",
+            }}
+        >
             <Box
                 display="flex"
                 flexDirection="column"
                 alignItems="center"
                 justifyContent="center"
-                sx={{ width: { lg: "45%", md: "50%", sm: "100%", xs: "100%" }, opacity: "95%", background: "#F5F7F9", height: "100vh" }}>
-
+                sx={{ width: { lg: "45%", md: "50%", sm: "100%", xs: "100%" }, opacity: "95%", background: "#F5F7F9", height: "100vh" }}
+            >
                 <Box sx={{ paddingBottom: "2.5rem" }}>
-                    <img src={Ukeylogo} height={"70px"} width={"143px"} />
+                    <img src={Ukeylogo} height={"70px"} width={"143px"} alt="Logo" />
                 </Box>
 
-                <Typography
-                    variant="h1"
-                    mt={"1em"}
-                    sx={{ fontWeight: 600, fontSize: "1.675rem", fontFamily: "Inter", color: "#14181F" }}
-                >
+                <Typography variant="h1" mt={"1em"} sx={{ fontWeight: 600, fontSize: "1.675rem", fontFamily: "Inter", color: "#14181F" }}>
                     Login
                 </Typography>
-                <Typography
-                    mt="1.6em"
-                    sx={{ fontSize: "1rem", fontFamily: "Inter", color: "#14181F", textAlign: "center" }}
-                >
+                <Typography mt="1.6em" sx={{ fontSize: "1rem", fontFamily: "Inter", color: "#14181F", textAlign: "center" }}>
                     If you don't have an account register
                 </Typography>
                 <Stack direction={"row"} gap={2}>
@@ -403,7 +364,7 @@ function Login() {
                         fullWidth
                         size="small"
                         placeholder="Enter your password"
-                        type={passwordVisible ? 'text' : 'password'}
+                        type={passwordVisible ? "text" : "password"}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                     />

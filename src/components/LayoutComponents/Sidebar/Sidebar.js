@@ -27,6 +27,9 @@ import {
 } from "../../UI/Layout";
 import { useNavigate } from "react-router-dom";
 
+import { signOut, getAuth } from "firebase/auth";
+
+
 function Sidebar() {
   const navigate = useNavigate();
   const [selectedItem, setSelectedItem] = useState(null);
@@ -35,6 +38,22 @@ function Sidebar() {
     setSelectedItem(index);
     navigate(route);
   };
+
+  const handleLogout = async () => {
+    try {
+        // Sign out the user from Firebase Authentication
+        await signOut(getAuth());
+        
+        // Remove user data from localStorage (if any)
+        localStorage.removeItem('user');
+        
+        // Optionally, navigate to a login page after logging out
+        navigate("/login");
+    } catch (error) {
+        console.error("Logout error: ", error);
+    }
+};
+
 
 
   const listItems = [
@@ -158,7 +177,7 @@ function Sidebar() {
                   backgroundColor: "lightgray",
                 },
               }}
-              onClick={() => navigate("/login")}
+              onClick={handleLogout}
             >
               Log out
             </Button>

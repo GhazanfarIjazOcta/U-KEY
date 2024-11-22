@@ -13,6 +13,10 @@ import TablePagination from "../Pagination/TablePagination";
 import { Typography } from "@mui/material";
 import CompaniesTableContent from "../Table/CompaniesTableContent";
 import MachineLogsTable from "../Table/MachineLogsTable";
+
+import OrganizationList from "../Table/OrganizationList";
+
+
 export default function Companies() {
   return (
     <Box sx={{
@@ -26,35 +30,7 @@ export default function Companies() {
     }} mt={0}>
 
 
-      {/* <Grid container
-        spacing={2} a
-        sx={{
-          flexGrow: 1,
-          flexWrap: "wrap",
-        }}>
-
-        <Grid item xs={13} sm={6} md={2.98} sx={{ flexShrink: 1 }}>
-          <OutlinedCard text={"All Vehicles"} icon={VehicleLogo} />
-        </Grid>
-        <Grid item xs={13} sm={6} md={2.98} sx={{ flexShrink: 1 }}>
-          <OutlinedCard text={"Active"} icon={ActiveLogo} />
-        </Grid>
-        <Grid item xs={13} sm={6} md={2.98} sx={{ flexShrink: 1 }}>
-          <OutlinedCard text={"InActive"} icon={InActiveLogo} />
-        </Grid>
-        <Grid item xs={13} sm={6} md={2.98} sx={{ flexShrink: 1 }}>
-          <OutlinedCard text={"In Maintenance"} icon={MaintenenceLogo} />
-        </Grid>
-
-      </Grid> */}
-
-      {/* <TableHeader
-        text={"Vehicle Management"}
-        searchText={"Vehicle"}
-        buttonText={"Add Vehicle"}
-        icon={VehicleLogo}
-        route={"/add-vehicle"}
-      /> */}
+   
       <Box sx={{ padding: { lg: "1rem 4rem 1rem 1rem", xs: "1rem 1rem 1rem 1rem" }, marginRight: { sm: "2rem", xs: "0rem" }, background: "#FFF", }}>
         <Box sx={{ display: "flex", gap: "1.5rem", alignItems: "center" }}>
           <Box sx={{ width: 44, height: 40, background: "#FEF2E5", borderRadius: "0.7rem", display: "flex", justifyContent: "center", alignItems: "center" }}> <img src={CompanyIcon} /> </Box>
@@ -63,6 +39,8 @@ export default function Companies() {
           </Typography>
         </Box>
         <CompaniesTableContent />
+
+        <OrganizationList />
 
       </Box>
 

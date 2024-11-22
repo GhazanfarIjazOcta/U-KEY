@@ -234,9 +234,6 @@
 
 
 
-
-
-
 import React, { useState } from "react";
 import {
     Box,
@@ -246,12 +243,10 @@ import {
     Typography,
 } from "@mui/material";
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
-import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined';
 import { useNavigate } from "react-router-dom";
-
-import { auth, rtdb } from "../../../firebase"; // Import Realtime Database (rtdb)
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { ref, set } from "firebase/database"; // Realtime Database functions
+import { auth, rtdb } from "../../../firebase";
+import { createUserWithEmailAndPassword, setPersistence, browserSessionPersistence } from "firebase/auth";
+import { ref, set } from "firebase/database";
 
 function Signup() {
     const navigate = useNavigate();
@@ -267,6 +262,7 @@ function Signup() {
     const [passwordVisible, setPasswordVisible] = useState(false);
     const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
     const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
 
     const togglePasswordVisibility = () => setPasswordVisible(!passwordVisible);
     const toggleConfirmPasswordVisibility = () => setConfirmPasswordVisible(!confirmPasswordVisible);
@@ -275,65 +271,61 @@ function Signup() {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    const [loading, setLoading] = useState(false);
-
     const handleRegister = async () => {
         const { name, email, phone, organizationName, organizationAddress, password, confirmPassword } = formData;
-    
+
         if (!name || !email || !phone || !organizationName || !organizationAddress || !password) {
             setError("All fields are required.");
             return;
         }
-    
+
         if (password !== confirmPassword) {
             setError("Passwords do not match.");
             return;
         }
-    
-        setLoading(true); // Show loading indicator
-    
+
+        setLoading(true);
         try {
+            // Set session persistence
+            await setPersistence(auth, browserSessionPersistence);
+
             // Register user in Firebase Authentication
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    
+
             // Generate a random organization ID for each new signup
-            const organizationID = Math.random().toString(36).substring(2, 15); // Random alphanumeric string
-    
-            // Store additional user data in Realtime Database
+            const organizationID = Math.random().toString(36).substring(2, 15);
+
+            // User data to store
             const userData = {
                 name,
                 email,
                 phone,
                 organizationName,
                 organizationAddress,
-                status: "inactive",  // Set status here if required
-                role: "admin",  // Default role
-                organizationID: organizationID
+                status: "inactive",
+                role: "admin",
+                organizationID,
             };
 
-            localStorage.setItem('user', JSON.stringify(userData));
-
-    
             // Save user data in the Realtime Database
             const userRef = ref(rtdb, 'users/' + userCredential.user.uid);
             await set(userRef, userData);
-            
-            // Save organization data if necessary
+
+            // Save organization data
             const organizationRef = ref(rtdb, 'organizations/' + organizationID);
             await set(organizationRef, {
                 name: organizationName,
                 address: organizationAddress,
-                users: [userCredential.user.uid] // You can add the first user to the organization here
+                users: [userCredential.user.uid],
             });
 
-            // Navigate to dashboard on success
             alert("Registration successful!");
             navigate("/dashboard");
         } catch (err) {
             setError("Registration failed. Please try again.");
-            console.error("Registration error: ", err);
+            console.error("Registration error:", err);
         } finally {
-            setLoading(false); // Stop loading indicator
+            setLoading(false);
         }
     };
 
@@ -348,41 +340,12 @@ function Signup() {
                     Register
                 </Typography>
                 <Stack spacing={2}>
-                    <TextField
-                        label="Full Name"
-                        name="name"
-                        value={formData.name}
-                        onChange={handleChange}
-                        fullWidth
-                    />
-                    <TextField
-                        label="Email"
-                        name="email"
-                        value={formData.email}
-                        onChange={handleChange}
-                        fullWidth
-                    />
-                    <TextField
-                        label="Phone Number"
-                        name="phone"
-                        value={formData.phone}
-                        onChange={handleChange}
-                        fullWidth
-                    />
-                    <TextField
-                        label="Organization Name"
-                        name="organizationName"
-                        value={formData.organizationName}
-                        onChange={handleChange}
-                        fullWidth
-                    />
-                    <TextField
-                        label="Organization Address"
-                        name="organizationAddress"
-                        value={formData.organizationAddress}
-                        onChange={handleChange}
-                        fullWidth
-                    />
+                    {/* Form fields */}
+                    <TextField label="Full Name" name="name" value={formData.name} onChange={handleChange} fullWidth />
+                    <TextField label="Email" name="email" value={formData.email} onChange={handleChange} fullWidth />
+                    <TextField label="Phone Number" name="phone" value={formData.phone} onChange={handleChange} fullWidth />
+                    <TextField label="Organization Name" name="organizationName" value={formData.organizationName} onChange={handleChange} fullWidth />
+                    <TextField label="Organization Address" name="organizationAddress" value={formData.organizationAddress} onChange={handleChange} fullWidth />
                     <TextField
                         label="Password"
                         name="password"
@@ -392,10 +355,7 @@ function Signup() {
                         fullWidth
                         InputProps={{
                             endAdornment: (
-                                <VisibilityOutlinedIcon
-                                    onClick={togglePasswordVisibility}
-                                    style={{ cursor: "pointer" }}
-                                />
+                                <VisibilityOutlinedIcon onClick={togglePasswordVisibility} style={{ cursor: "pointer" }} />
                             ),
                         }}
                     />
@@ -408,10 +368,7 @@ function Signup() {
                         fullWidth
                         InputProps={{
                             endAdornment: (
-                                <VisibilityOutlinedIcon
-                                    onClick={toggleConfirmPasswordVisibility}
-                                    style={{ cursor: "pointer" }}
-                                />
+                                <VisibilityOutlinedIcon onClick={toggleConfirmPasswordVisibility} style={{ cursor: "pointer" }} />
                             ),
                         }}
                     />
@@ -421,12 +378,7 @@ function Signup() {
                         {error}
                     </Typography>
                 )}
-                <Button
-                    variant="contained"
-                    fullWidth
-                    sx={{ mt: 2 }}
-                    onClick={handleRegister}
-                >
+                <Button variant="contained" fullWidth sx={{ mt: 2 }} onClick={handleRegister}>
                     Register
                 </Button>
             </Box>
@@ -435,4 +387,3 @@ function Signup() {
 }
 
 export default Signup;
-

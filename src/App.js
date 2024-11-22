@@ -47,6 +47,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Loader from "./components/UI/Loader";
 import AddUser from "./components/DashboardComponents/User Managment/AddUser";
 
+import { UserProvider } from "./Context/UserContext";
+
 // Lazy load the components
 const Signup = lazy(() => import("./pages/Signup/Signup"));
 const Login = lazy(() => import("./pages/Login/Login"));
@@ -63,6 +65,7 @@ function App() {
   return (
     <BrowserRouter>
       {/* Suspense with Loader fallback */}
+      <UserProvider>
       <Suspense fallback={<Loader />}>
         <Routes>
           <Route path="/" element={<Login />} />
@@ -81,13 +84,14 @@ function App() {
             <Route path="machines" element={<Machines />} />
             <Route path="operators" element={<Operators />} />
             <Route path="maintenance" element={<Maintenance />} />
-
-
-
             <Route path="user-management/add-user" element={<AddUser />} />
+
+
+            
           </Route>
         </Routes>
       </Suspense>
+      </UserProvider>
     </BrowserRouter>
   );
 }

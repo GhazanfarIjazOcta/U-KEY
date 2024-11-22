@@ -28,7 +28,14 @@ import Chat from "../../../assets/Layout/Chat.png";
 import Sidebar from "../Sidebar/Sidebar";
 import SidebarMobile from "../SidebarMobile/SidebarMobile";
 
+import { useUser } from "../../../Context/UserContext";
+
+import { signOut, getAuth } from "firebase/auth";
+
+
 const Search = styled("div")(({ theme }) => ({
+
+
   position: "relative",
   borderRadius: theme.shape.borderRadius,
   backgroundColor: alpha(theme.palette.common.black, 0.15),
@@ -72,6 +79,8 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
 }));
 
 export default function Navbar() {
+
+  const { user, updateUserData } = useUser(); // Destructure user data from context
   const [headerMessage, setHeaderMessage] = React.useState(
     "Good morning, Admin"
   );
@@ -294,10 +303,10 @@ export default function Navbar() {
             />
             <Box sx={userNameStyle}>
               <Typography sx={{ fontWeight: 500, fontSize: "0.9rem", color: "#0A112F", fontFamily: "Inter" }}>
-                Chris Miguel
+              {user.name}
               </Typography>
               <Typography sx={{ fontSize: "0.8rem", color: "#3D4149", fontFamily: "Inter" }} >
-                Admin
+              {user.role}
               </Typography>
             </Box>
           </Box>
