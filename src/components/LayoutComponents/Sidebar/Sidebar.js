@@ -74,7 +74,7 @@ function Sidebar() {
 
   const AdminlistItems = [
     { text: "Dashboard", icon: DashboardLogo, selectedIcon: SelectedDashboardLogo, route: "/dashboard" },
-
+    { text: "Companies", icon: CompanyLogo, selectedIcon: SelectedCompanyLogo, route: "companies", },
     { text: "Users", icon: UserLogo, selectedIcon: SelectedUserLogo, route: "user-management" },
     { text: "Machines", icon: MachinesLogo, selectedIcon: SelectedMachinesLogo, route: "machines", },
     { text: "Operators", icon: OperatorsLogo, selectedIcon: SelectedOperatorLogo, route: "operators", },
