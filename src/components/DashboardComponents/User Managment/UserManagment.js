@@ -1,4 +1,4 @@
-import * as React from "react";
+
 import Box from "@mui/material/Box";
 import Grid from "@mui/material/Grid";
 import OutlinedCard from "../Card/Card";
@@ -14,6 +14,16 @@ import { auth } from "../../../firebase";
 
 import { useUser } from "../../../Context/UserContext";
 
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+
+import { onAuthStateChanged } from "firebase/auth";
+
+import { getDatabase, ref, get, set,  update, remove } from "firebase/database";
+import { getAuth, deleteUser } from "firebase/auth"; // Import deleteUser from Firebase Authentication
+
+import { onValue } from "firebase/database"; // Import onValue
+
 
 export default function UserManagment() {
 
@@ -21,6 +31,86 @@ export default function UserManagment() {
   const sidebarWidth = 12; // Adjust this based on your sidebar's width
 
   console.log("here is the user info " , auth.currentUser)
+
+
+ 
+  console.log("user organization id in " , user.organizationID
+  )
+
+  const CurrentUserID = user.uid
+
+  console.log("user current id in " , CurrentUserID) 
+
+  const CurrentOrganizationID = user.organizationID;
+
+  const [users, setusers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const navigate = useNavigate();
+
+  const [totalUsers, setTotalUsers] = useState(0);
+const [adminUsers, setAdminUsers] = useState(0);
+const [operatorUsers, setOperatorUsers] = useState(0);
+
+
+
+useEffect(() => {
+  const unsubscribeAuth = onAuthStateChanged(auth, (authUser) => {
+    if (authUser) { // Check if the user is authenticated
+      try {
+        const db = getDatabase();
+        const usersRef = ref(db, "users");
+
+        // Use onValue for real-time updates
+        const unsubscribeDB = onValue(usersRef, (snapshot) => {
+          if (snapshot.exists()) {
+            const allUsers = snapshot.val();
+            const filteredUsers = Object.keys(allUsers)
+              .map((key) => ({
+                id: key,
+                ...allUsers[key],
+              }))
+              .filter((user) => user.organizationID === CurrentOrganizationID); // Filter users by organization ID
+
+            // Set filtered users in state
+            setusers(filteredUsers);
+
+            // Count total users
+            const totalUsers = filteredUsers.length;
+
+            // Count users with 'admin' role
+            const adminUsers = filteredUsers.filter((user) => user.role === 'admin').length;
+
+            // Count users with 'operator' role
+            const operatorUsers = filteredUsers.filter((user) => user.role === 'operator').length;
+
+            // Set the counts in state
+            setTotalUsers(totalUsers);
+            setAdminUsers(adminUsers);
+            setOperatorUsers(operatorUsers);
+          } else {
+            setError("No users found.");
+          }
+        });
+
+        // Cleanup the database listener when the component unmounts
+        return () => unsubscribeDB();
+      } catch (err) {
+        setError(err.message);
+      }
+    } else {
+      setError("You must be logged in to view this page.");
+      // navigate("/login");
+    }
+    setLoading(false); // Set loading to false after fetching data
+  });
+
+  // Cleanup the auth listener when the component unmounts
+  return () => unsubscribeAuth();
+}, [navigate, CurrentOrganizationID]); // Add CurrentOrganizationID to dependency array
+
+
+
   return (
     <Box
       sx={{
@@ -45,17 +135,17 @@ export default function UserManagment() {
       >
         {/* Allow the cards to shrink when zoomed in */}
         <Grid item xs={13} sm={6} md={2.98} sx={{ flexShrink: 1 }}>
-          <OutlinedCard text={"All Users"} icon={UserLogo} />
+          <OutlinedCard text={"All Users"} icon={UserLogo}  secText={totalUsers}/>
         </Grid>
         
         <Grid item xs={13} sm={6} md={2.98} sx={{ flexShrink: 1 }}>
-          <OutlinedCard text={"Admin"} icon={AdminLogo} />
+          <OutlinedCard text={"Admin"} icon={AdminLogo} secText={adminUsers}/>
         </Grid>
         <Grid item xs={13} sm={6} md={2.98} sx={{ flexShrink: 1 }}>
-          <OutlinedCard text={"Drivers"} icon={DriverLogo} />
+          <OutlinedCard text={"Operators"} icon={DriverLogo} secText={operatorUsers} />
         </Grid>
         <Grid item xs={13} sm={6} md={2.98} sx={{ flexShrink: 1 }}>
-          <OutlinedCard text={"Guest"} icon={GuestLogo} />
+          <OutlinedCard text={"Guest"} icon={GuestLogo} secText={0} />
         </Grid>
       </Grid>
 

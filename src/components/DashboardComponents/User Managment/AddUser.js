@@ -186,64 +186,119 @@ function AddUser() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  // const handleAddUser = async () => {
+  //   try {
+  //     // Retrieve logged-in admin's details
+  //     const loggedInAdminUid = auth.currentUser?.uid;
+  //     if (!loggedInAdminUid) throw new Error("Admin not logged in.");
+
+  //     const adminRef = ref(rtdb, `users/${loggedInAdminUid}`);
+  //     const adminSnapshot = await get(adminRef);
+
+  //     if (!adminSnapshot.exists()) {
+  //       throw new Error("Admin details not found.");
+  //     }
+
+  //     const adminData = adminSnapshot.val();
+  //     const adminOrgId = adminData.organizationID;
+
+  //     if (!adminOrgId) {
+  //       throw new Error("Admin's organization not found.");
+  //     }
+
+  //     // Create a new user in Firebase Authentication
+  //     const userCredential = await createUserWithEmailAndPassword(
+  //       auth,
+  //       formData.email,
+  //       formData.password
+  //     );
+  //     const newUser = userCredential.user;
+
+  //     // Add user data to the users node
+  //     const newUserRef = ref(rtdb, `users/${newUser.uid}`);
+  //     await set(newUserRef, {
+  //       // userId: formData.userId,
+  //       userId: newUser.uid,
+  //       name: formData.name,
+  //       email: formData.email,
+  //       phone: formData.phone,
+  //       role: formData.role,
+  //       status: formData.status,
+  //       organizationID: adminOrgId,
+  //       organizationName: adminData.organizationName,
+  //       organizationAddress: adminData.organizationAddress,
+  //     });
+
+  //     // Add user's UID to the organization's users array
+  //     const orgUsersRef = ref(rtdb, `organizations/${adminOrgId}/users`);
+  //     const orgUsersSnapshot = await get(orgUsersRef);
+
+  //     let orgUsers = orgUsersSnapshot.exists() ? orgUsersSnapshot.val() : [];
+  //     if (!Array.isArray(orgUsers)) orgUsers = []; // Ensure it's an array
+  //     orgUsers.push(newUser.uid);
+
+  //     await set(orgUsersRef, orgUsers);
+
+  //     alert("User added successfully!");
+  //   } catch (error) {
+  //     console.error("Error adding user:", error);
+  //     alert("Failed to add user. See console for details.");
+  //   }
+  // };
+
+
+
   const handleAddUser = async () => {
     try {
-      // Retrieve logged-in admin's details
       const loggedInAdminUid = auth.currentUser?.uid;
       if (!loggedInAdminUid) throw new Error("Admin not logged in.");
-
+  
       const adminRef = ref(rtdb, `users/${loggedInAdminUid}`);
       const adminSnapshot = await get(adminRef);
-
-      if (!adminSnapshot.exists()) {
-        throw new Error("Admin details not found.");
-      }
-
+      if (!adminSnapshot.exists()) throw new Error("Admin details not found.");
+  
       const adminData = adminSnapshot.val();
       const adminOrgId = adminData.organizationID;
-
-      if (!adminOrgId) {
-        throw new Error("Admin's organization not found.");
-      }
-
-      // Create a new user in Firebase Authentication
+  
+      // Firebase Authentication to create user
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         formData.email,
         formData.password
       );
       const newUser = userCredential.user;
-
-      // Add user data to the users node
+  
+      // Add user to RTDB
       const newUserRef = ref(rtdb, `users/${newUser.uid}`);
       await set(newUserRef, {
-        userId: formData.userId,
+        userId: newUser.uid,  // Use Firebase-generated uid
         name: formData.name,
         email: formData.email,
         phone: formData.phone,
         role: formData.role,
         status: formData.status,
         organizationID: adminOrgId,
-        organizationName: adminData.organizationName,
-        organizationAddress: adminData.organizationAddress,
       });
-
-      // Add user's UID to the organization's users array
+  
+      // Update organization's users array
       const orgUsersRef = ref(rtdb, `organizations/${adminOrgId}/users`);
       const orgUsersSnapshot = await get(orgUsersRef);
-
       let orgUsers = orgUsersSnapshot.exists() ? orgUsersSnapshot.val() : [];
-      if (!Array.isArray(orgUsers)) orgUsers = []; // Ensure it's an array
+      
+      if (!Array.isArray(orgUsers)) orgUsers = [];
       orgUsers.push(newUser.uid);
-
       await set(orgUsersRef, orgUsers);
-
+  
       alert("User added successfully!");
     } catch (error) {
-      console.error("Error adding user:", error);
-      alert("Failed to add user. See console for details.");
+      console.error("Error adding user:", error.message);  // Improved logging
+      alert(`Failed to add user: ${error.message}`);
     }
   };
+  
+
+
+
 
   return (
     <Paper sx={{ padding: 3 }}>

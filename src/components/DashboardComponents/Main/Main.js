@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
     Box,
     Grid2,
@@ -18,7 +18,91 @@ import AllOperatorsTable from "../Table/AllOperatorsTable";
 import TotalCard from "../Card/TotalCard";
 import AlertsCard from "../Card/AlertsCard";
 
+import Switch from '@mui/material/Switch'; // For default export
+import { useUser } from "../../../Context/UserContext";
+
+import { useNavigate } from "react-router-dom";
+import { onAuthStateChanged } from "firebase/auth";
+
+import { getDatabase, ref, get, update, remove } from "firebase/database";
+
+import { auth } from "../../../firebase"; // Firebase auth instance
+
+import { onValue } from "firebase/database"; // Import onValue
+
 export default function Main() {
+
+
+
+    const { user, updateUserData } = useUser(); // Destructure user data from context
+    console.log("user role in organisation table is  " , user.organizationID)
+  
+  
+    const [organizations, setOrganizations] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const navigate = useNavigate();
+    const [organizationCounts, setOrganizationCounts] = useState({
+        total: 0,
+        active: 0,
+        inactive: 0
+      });
+      
+
+
+
+      useEffect(() => {
+        const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+          if (user) {
+            try {
+              const db = getDatabase();
+              const organizationsRef = ref(db, "organizations");
+      
+              // Use onValue for real-time updates
+              const unsubscribeDB = onValue(organizationsRef, (snapshot) => {
+                if (snapshot.exists()) {
+                  const orgData = snapshot.val();
+                  const orgList = Object.keys(orgData).map((key) => ({
+                    id: key,
+                    ...orgData[key],
+                  }));
+      
+                  // Counting total, active, and inactive organizations
+                  const totalOrganizations = orgList.length;
+                  const activeOrganizations = orgList.filter((org) => org.status === 'active').length;
+                  const inactiveOrganizations = orgList.filter((org) => org.status === 'inactive').length;
+      
+                  setOrganizations(orgList);
+                  setOrganizationCounts({
+                    total: totalOrganizations,
+                    active: activeOrganizations,
+                    inactive: inactiveOrganizations,
+                  });
+                } else {
+                  setError("No organizations found.");
+                }
+              });
+      
+              // Cleanup the database listener when the component unmounts
+              return () => unsubscribeDB();
+            } catch (err) {
+              setError(err.message);
+            }
+          } else {
+            setError("You must be logged in to view this page.");
+            navigate("/login");
+          }
+          setLoading(false);
+        });
+      
+        // Cleanup the auth listener when the component unmounts
+        return () => unsubscribeAuth();
+      }, [navigate]);
+      
+
+
+
+
     return (
 
         <Box sx={{
@@ -46,9 +130,9 @@ export default function Main() {
                             <TotalCard
                                 icon={"CompaniesIcon"}
                                 title={"Total Companies"}
-                                totalNumber={"06"}
-                                activeNumber={"13"}
-                                inactiveNumber={"13"}
+                                totalNumber={organizationCounts.total}
+                                activeNumber={organizationCounts.active}
+                                inactiveNumber={organizationCounts.inactive}
                                 maintenanceNumber={null}
                             />
                         </Grid2>

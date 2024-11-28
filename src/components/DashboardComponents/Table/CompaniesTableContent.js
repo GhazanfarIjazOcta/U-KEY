@@ -18,9 +18,10 @@ import Edit from "../../../assets/Table/Edit.png";
 import Delete from "../../../assets/Table/Delete.png";
 
 import Switch from '@mui/material/Switch'; // For default export
-
 import { useUser } from "../../../Context/UserContext";
 
+
+import { onValue } from "firebase/database"; // Import onValue
 
 // Function to create a row
 function createData(
@@ -59,36 +60,42 @@ export default function CompaniesTableContent() {
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        try {
-          const db = getDatabase();
-          const organizationsRef = ref(db, "organizations");
-          const snapshot = await get(organizationsRef);
+useEffect(() => {
+  const db = getDatabase();
+  const organizationsRef = ref(db, "organizations");
 
-          if (snapshot.exists()) {
-            const orgData = snapshot.val();
-            const orgList = Object.keys(orgData).map((key) => ({
-              id: key,
-              ...orgData[key],
-            }));
-            setOrganizations(orgList);
-          } else {
-            setError("No organizations found.");
-          }
-        } catch (err) {
-          setError(err.message);
-        }
+  // Set loading state before starting data fetch
+  setLoading(true);
+
+  const unsubscribe = onValue(
+    organizationsRef,
+    (snapshot) => {
+      if (snapshot.exists()) {
+        const orgData = snapshot.val();
+        const orgList = Object.keys(orgData).map((key) => ({
+          id: key,
+          ...orgData[key],
+        }));
+        setOrganizations(orgList);  // Update the state in real time
+        setError(null);             // Clear any previous errors
+        console.log("Data updated:", orgList);  // Log data for debugging
       } else {
-        setError("You must be logged in to view this page.");
-        navigate("/login");
+        setOrganizations([]);  // Clear organizations if none exist
+        setError("No organizations found.");
       }
       setLoading(false);
-    });
+    },
+    (error) => {
+      setError("Error fetching data: " + error.message); // Detailed error logging
+      setLoading(false);
+    }
+  );
 
-    return () => unsubscribe();
-  }, [navigate]);
+  return () => {
+    unsubscribe();  // Clean up listener on unmount
+    console.log("Listener unsubscribed"); // Log cleanup
+  };
+}, [navigate]);  // Dependency array ensures useEffect runs on mount/re-render
 
   // Handle activating/deactivating an organization
   // const handleActivateDeactivate = async (organizationId, status) => {

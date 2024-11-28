@@ -104,7 +104,7 @@ export default function OutlinedCard({
                   fontFamily: "Poppins, sans-serif",
                 }}
               >
-                {secText ? secText : "09"}
+                {secText ? secText : "0"}
               </Typography>
             </Stack>
           </Stack>
