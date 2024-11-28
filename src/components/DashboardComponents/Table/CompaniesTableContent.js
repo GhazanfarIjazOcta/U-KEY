@@ -19,6 +19,8 @@ import Delete from "../../../assets/Table/Delete.png";
 
 import Switch from '@mui/material/Switch'; // For default export
 
+import { useUser } from "../../../Context/UserContext";
+
 
 // Function to create a row
 function createData(
@@ -47,6 +49,11 @@ const rows = [
 ];
 
 export default function CompaniesTableContent() {
+
+  const { user, updateUserData } = useUser(); // Destructure user data from context
+  console.log("user role in organisation table is  " , user.organizationID)
+
+
   const [organizations, setOrganizations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -182,7 +189,7 @@ export default function CompaniesTableContent() {
               <Typography sx={TableStyles.headingStyle}>Company Name</Typography>
             </TableCell>
             <TableCell align="center">
-              <Typography sx={TableStyles.headingStyle}>Total Machines</Typography>
+              <Typography sx={TableStyles.headingStyle}>Company Address</Typography>
             </TableCell>
             <TableCell align="center">
               <Typography sx={TableStyles.headingStyle}>Total Operators</Typography>
@@ -255,11 +262,11 @@ export default function CompaniesTableContent() {
                     onClick={() => handleActivateDeactivate(organization.id, organization.status) }
                   /> */}
                 <Switch
-    checked={organization.status === 'active'} // Determines if the status is active
-    onChange={() => handleActivateDeactivate(organization.id, organization.status)} // Toggle function
-    color={organization.status === 'active' ? 'success' : 'error'} // Green for active, red for inactive
-    inputProps={{ 'aria-label': 'toggle organization status' }} // Accessibility
-  />
+                    checked={organization.status === 'active'} // Determines if the status is active
+                    onChange={() => handleActivateDeactivate(organization.id, organization.status)} // Toggle function
+                    color={organization.status === 'active' ? 'success' : 'error'} // Green for active, red for inactive
+                    inputProps={{ 'aria-label': 'toggle organization status' }} // Accessibility
+                  />
                   <img
                     src={Delete}
                     width="24px"

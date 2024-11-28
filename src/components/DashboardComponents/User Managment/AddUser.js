@@ -176,7 +176,7 @@ function AddUser() {
     userId: "",
     name: "",
     email: "",
-    phoneNumber: "",
+    phone: "",
     role: "employee", // Default role
     status: "inactive", // Default status
     password: "", // Password field added
@@ -220,7 +220,7 @@ function AddUser() {
         userId: formData.userId,
         name: formData.name,
         email: formData.email,
-        phoneNumber: formData.phoneNumber,
+        phone: formData.phone,
         role: formData.role,
         status: formData.status,
         organizationID: adminOrgId,
@@ -248,7 +248,7 @@ function AddUser() {
   return (
     <Paper sx={{ padding: 3 }}>
       <Box>
-        {["userId", "name", "email", "phoneNumber", "role", "status", "password"].map((field) => (
+        {["userId", "name", "email", "phone", "role", "status", "password"].map((field) => (
           <Box key={field} sx={{ marginBottom: 2 }}>
             <Typography>{field.charAt(0).toUpperCase() + field.slice(1)}</Typography>
             <TextField

@@ -30,11 +30,14 @@ import { useNavigate } from "react-router-dom";
 import { signOut, getAuth } from "firebase/auth";
 import { useUser } from "../../../Context/UserContext";
 
+
+
 function Sidebar() {
 
 
   const { user, updateUserData } = useUser(); // Destructure user data from context
   console.log("user role is " , user.role)
+  
   // const { storedUser } = useAuth();
   // console.log("user role is actually on sidebar ", storedUser);
   const navigate = useNavigate();
@@ -64,7 +67,7 @@ function Sidebar() {
 
 
 
-  const listItems = [
+  const SuperAdminlistItems = [
     { text: "Dashboard", icon: DashboardLogo, selectedIcon: SelectedDashboardLogo, route: "/dashboard" },
     { text: "Companies", icon: CompanyLogo, selectedIcon: SelectedCompanyLogo, route: "companies", },
     { text: "Users", icon: UserLogo, selectedIcon: SelectedUserLogo, route: "user-management" },
@@ -76,7 +79,7 @@ function Sidebar() {
 
   const AdminlistItems = [
     { text: "Dashboard", icon: DashboardLogo, selectedIcon: SelectedDashboardLogo, route: "/dashboard" },
-    { text: "Companies", icon: CompanyLogo, selectedIcon: SelectedCompanyLogo, route: "companies", },
+
     { text: "Users", icon: UserLogo, selectedIcon: SelectedUserLogo, route: "user-management" },
     { text: "Machines", icon: MachinesLogo, selectedIcon: SelectedMachinesLogo, route: "machines", },
     { text: "Operators", icon: OperatorsLogo, selectedIcon: SelectedOperatorLogo, route: "operators", },
@@ -85,12 +88,25 @@ function Sidebar() {
   ]
 
   const CustomerlistItems = [
-
-    
+    { text: "Dashboard", icon: DashboardLogo, selectedIcon: SelectedDashboardLogo, route: "/dashboard" },
+    { text: "Machines", icon: MachinesLogo, selectedIcon: SelectedMachinesLogo, route: "machines", },
+    { text: "Maintenance", icon: MaintenanceLogo, selectedIcon: SelectedMaintenanceLogo, route: "maintenance", },
   ]
 
+  // // Conditionally set the list items based on the userRole
+  // const listToRender = user.role === "superAdmin" ? SuperAdminlistItems : AdminlistItems;
   // Conditionally set the list items based on the userRole
-  const listToRender = user.role === "superAdmin" ? listItems : AdminlistItems;
+let listToRender;
+if (user.role === "superAdmin") {
+    listToRender = SuperAdminlistItems;
+} else if (user.role === "admin") {
+    listToRender = AdminlistItems;
+} else if (user.role === "employee") {
+    listToRender = CustomerlistItems;
+} else {
+    // Default or fallback case (e.g., handle unexpected roles)
+    listToRender = [];
+}
 
   return (
     <Box

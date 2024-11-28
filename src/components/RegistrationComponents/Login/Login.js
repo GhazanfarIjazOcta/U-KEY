@@ -210,6 +210,9 @@ import VisibilityOffOutlinedIcon from "@mui/icons-material/VisibilityOffOutlined
 import { RegistrationStyles } from "../../UI/Styles";
 import "../../UI/Styles.css";
 
+import { useUser } from "../../../Context/UserContext"; // Import your UserContext
+
+
 function Login() {
     const navigate = useNavigate();
     const [passwordVisible, setPasswordVisible] = useState(false);
@@ -217,6 +220,8 @@ function Login() {
     const [password, setPassword] = useState("");
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(false);
+
+    const { updateUserData } = useUser();
 
     useEffect(() => {
         // Restore session on component mount
@@ -262,25 +267,57 @@ function Login() {
     const redirectToDashboard = (role) => {
         
         if (role === "admin") navigate("/dashboard");
-        else if (role === "employee") navigate("/user-dashboard");
+        else if (role === "employee") navigate("/dashboard");
         else navigate("/dashboard");
     };
+
+    // const handleLogin = async () => {
+    //     setLoading(true);
+    //     try {
+    //         const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    //         const user = userCredential.user;
+
+    //         const userData = await getUserData(user.uid);
+    //         if (userData) {
+    //             const completeUserData = {
+    //                 uid: user.uid,
+    //                 email: user.email,
+    //                 name: user.displayName || "", // Handle possible null display name
+    //                 ...userData,
+    //             };
+    //             localStorage.setItem("user", JSON.stringify(completeUserData));
+    //             redirectToDashboard(userData.role);
+    //         } else {
+    //             setError("User data not found in the database.");
+    //         }
+    //     } catch (error) {
+    //         handleFirebaseErrors(error);
+    //     } finally {
+    //         setLoading(false);
+    //     }
+    // };
 
     const handleLogin = async () => {
         setLoading(true);
         try {
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
-
+    
             const userData = await getUserData(user.uid);
             if (userData) {
                 const completeUserData = {
                     uid: user.uid,
                     email: user.email,
-                    name: user.displayName || "", // Handle possible null display name
+                    name: user.displayName || "",
                     ...userData,
                 };
+                
+                // Store data in localStorage
                 localStorage.setItem("user", JSON.stringify(completeUserData));
+                
+                // Update context with the user data
+                updateUserData(completeUserData);
+                
                 redirectToDashboard(userData.role);
             } else {
                 setError("User data not found in the database.");
@@ -291,6 +328,9 @@ function Login() {
             setLoading(false);
         }
     };
+    
+
+
 
     const handleFirebaseErrors = (error) => {
         if (error.code === "auth/wrong-password") {
