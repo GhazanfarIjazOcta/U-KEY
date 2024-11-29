@@ -58,243 +58,128 @@ export default function TableContent() {
 
   console.log("user current id in ", CurrentUserID);
 
-  const CurrentOrganizationID = user.organizationID;
 
-  const [users, setusers] = useState([]);
+
+  // const CurrentOrganizationID = user.organizationID;
+
+  // const { user } = useUser(); // Destructure user data from context
+  const navigate = useNavigate();
+
+  const CurrentOrganizationID = user.organizationID;
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const navigate = useNavigate();
+
+  console.log("the users getting here are " , users)
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (authUser) => {
       if (authUser) {
-        // Check if the user is authenticated
         try {
           const db = getDatabase();
-          const usersRef = ref(db, "users");
-          const snapshot = await get(usersRef);
+          const orgRef = ref(db, "organizations");  // Reference to all organizations
+
+          const snapshot = await get(orgRef);  // Fetch all organizations
 
           if (snapshot.exists()) {
-            const allUsers = snapshot.val();
-            const filteredUsers = Object.keys(allUsers)
-              .map((key) => ({
-                id: key,
-                ...allUsers[key],
-              }))
-              .filter((user) => user.organizationID === CurrentOrganizationID); // Filter users by organization ID
+            const allOrganizations = snapshot.val();
+            const filteredUsers = [];
 
-            setusers(filteredUsers); // Set the filtered users in state
+            // Loop through organizations to find users under the current organization ID
+            for (const orgKey in allOrganizations) {
+              const organization = allOrganizations[orgKey];
+              if (organization.organizationID === CurrentOrganizationID && organization.users) {
+                // Extract the users and add them to the filtered list
+                for (const userKey in organization.users) {
+                  const user = organization.users[userKey];
+                  filteredUsers.push({
+                    ...user,  // Spread to include user details
+                    userID: user.userID,
+                  });
+                }
+              }
+            }
+            
+            setUsers(filteredUsers);  // Update state with the filtered users
           } else {
-            setError("No users found.");
+            setError("No organizations found.");
           }
         } catch (err) {
           setError(err.message);
         }
       } else {
         setError("You must be logged in to view this page.");
-        // navigate("/login");
       }
-      setLoading(false); // Set loading to false after fetching data
+      setLoading(false);  // Set loading to false after fetching data
     });
 
     return () => unsubscribe(); // Cleanup on component unmount
-  }, [navigate, CurrentOrganizationID]); // Add CurrentOrganizationID to dependency array
+  }, [CurrentOrganizationID]); // Ensure the effect re-runs if the organization ID changes
+  
 
-  // const handleDeleteUser = async (userId) => {
-  //   try {
-  //     const db = getDatabase();
-  //     const authInstance = getAuth();
-
-  //     // Delete user data from the 'users' node in the database
-  //     const userRef = ref(db, `users/${userId}`);
-  //     await remove(userRef);
-
-  //     // If the current logged-in user is being deleted
-  //     const currentUser = authInstance.currentUser;
-  //     if (currentUser && currentUser.uid === userId) {
-  //       try {
-  //         await deleteUser(currentUser); // Deletes the logged-in user from Firebase Authentication
-  //         console.log(`User with UID: ${userId} deleted from Firebase Authentication.`);
-  //       } catch (authError) {
-  //         console.error(`Error deleting user from Firebase Authentication: ${authError.message}`);
-  //       }
-  //     }
-
-  //     // Update the UI by removing the deleted user
-  //     setusers((prevUsers) => prevUsers.filter((user) => user.id !== userId));
-
-  //     alert("User and associated data have been deleted successfully.");
-  //   } catch (error) {
-  //     console.error(`Error deleting user: ${error.message}`);
-  //     setError("Error deleting user and their data.");
-  //   }
-  // };
-
-  // const handleDeleteUser = async (userId) => {
-  //   try {
-  //     const db = getDatabase();
-  //     const authInstance = getAuth();
-
-  //     // Delete user data from the 'users' node in the database
-  //     const userRef = ref(db, `users/${userId}`);
-  //     await remove(userRef);
-
-  //     // Remove user ID from the organization's user list
-  //     const orgsRef = ref(db, `organizations`);  // Path to organizations node
-  //     const orgSnapshot = await get(orgsRef);
-
-  //     if (orgSnapshot.exists()) {
-  //       const orgData = orgSnapshot.val();
-
-  //       // Loop through all organizations to remove the user ID from any 'members' field
-  //       for (const orgId in orgData) {
-  //         if (orgData[orgId].members && orgData[orgId].members.includes(userId)) {
-  //           const updatedMembers = orgData[orgId].members.filter(memberId => memberId !== userId);
-  //           const orgMembersRef = ref(db, `organizations/${orgId}/members`);
-  //           await set(orgMembersRef, updatedMembers);
-  //         }
-  //       }
-  //     }
-
-  //     // If the current logged-in user is being deleted
-  //     const currentUser = authInstance.currentUser;
-  //     if (currentUser && currentUser.uid === userId) {
-  //       try {
-  //         await deleteUser(currentUser); // Deletes the logged-in user from Firebase Authentication
-  //         console.log(`User with UID: ${userId} deleted from Firebase Authentication.`);
-  //       } catch (authError) {
-  //         console.error(`Error deleting user from Firebase Authentication: ${authError.message}`);
-  //       }
-  //     }
-
-  //     // Update the UI by removing the deleted user
-  //     setusers((prevUsers) => prevUsers.filter((user) => user.id !== userId));
-
-  //     alert("User and associated data have been deleted successfully.");
-  //   } catch (error) {
-  //     console.error(`Error deleting user: ${error.message}`);
-  //     setError("Error deleting user and their data.");
-  //   }
-  // };
 
   const handleDeleteUser = async (userId) => {
     try {
       const db = getDatabase();
       const authInstance = getAuth();
-
-      // Delete user data from the 'users' node in the database
-      const userRef = ref(db, `users/${userId}`);
+      
+      // 1. Delete user from the 'users' node
+      // const userRef = ref(db, `users/${userId}`);
+      const userRef = ref(db, `organizations/${CurrentOrganizationID}/users/${userId}`);
       await remove(userRef);
-
-      // Remove user ID from the specific organization's users list
+  
+      // 2. Remove user from organization-specific users list
       const orgsRef = ref(db, "organizations");
       const orgSnapshot = await get(orgsRef);
-
+      
       if (orgSnapshot.exists()) {
         const orgData = orgSnapshot.val();
-
+        
         for (const orgId in orgData) {
           const userList = orgData[orgId].users;
-          if (userList && userList.includes(userId)) {
-            const updatedUsers = userList.filter(
-              (memberId) => memberId !== userId
-            );
+          
+          if (userList && userList[userId]) {
+            // Remove the user from the organization's user list
+            const updatedUsers = { ...userList };
+            delete updatedUsers[userId]; // Remove the user
+            
             const orgUsersRef = ref(db, `organizations/${orgId}/users`);
-            await set(orgUsersRef, updatedUsers);
+            await update(orgUsersRef, updatedUsers); // Update the organization's user list in the database
           }
         }
       }
-
-      // Delete the user from Firebase Authentication if they are currently logged in
+  
+      // 3. If the logged-in user is being deleted, delete from Firebase Authentication
       const currentUser = authInstance.currentUser;
       if (currentUser && currentUser.uid === userId) {
         try {
-          await deleteUser(currentUser); // Deletes logged-in user from Firebase Authentication
-          console.log(
-            `User with UID: ${userId} deleted from Firebase Authentication.`
-          );
+          await deleteUser(currentUser); // Delete the logged-in user from Firebase Authentication
+          console.log(`User with UID: ${userId} deleted from Firebase Authentication.`);
         } catch (authError) {
-          console.error(
-            `Error deleting user from Firebase Authentication: ${authError.message}`
-          );
+          console.error(`Error deleting user from Firebase Authentication: ${authError.message}`);
         }
       }
-
-      // Update the UI by removing the deleted user
-      setusers((prevUsers) => prevUsers.filter((user) => user.id !== userId));
-
+  
+      // 4. Update the local UI state by removing the deleted user
+      setUsers((prevUsers) => prevUsers.filter((user) => user.id !== userId));
+  
       alert("User and associated data have been deleted successfully.");
     } catch (error) {
       console.error(`Error deleting user: ${error.message}`);
       setError("Error deleting user and their data.");
     }
   };
-
-  // const handleDeleteUser = async (userId) => {
-  //   try {
-  //     const db = getDatabase();
-  //     const authInstance = getAuth();
-
-  //     // 1. Delete user data from the 'users' node in the database
-  //     const userRef = ref(db, `users/${userId}`);
-  //     await remove(userRef);
-
-  //     // 2. Remove user ID from all organizations' user lists
-  //     const orgsRef = ref(db, 'organizations');
-  //     const orgSnapshot = await get(orgsRef);
-
-  //     if (orgSnapshot.exists()) {
-  //       const orgData = orgSnapshot.val();
-  //       for (const orgId in orgData) {
-  //         const userList = orgData[orgId].users || [];
-  //         if (userList.includes(userId)) {
-  //           const updatedUsers = userList.filter(memberId => memberId !== userId);
-  //           const orgUsersRef = ref(db, `organizations/${orgId}/users`);
-  //           await set(orgUsersRef, updatedUsers);
-  //         }
-  //       }
-  //     }
-
-  //     // 3. Delete the user from Firebase Authentication (requires admin privileges)
-  //     // Note: This must run on the server side or backend for security reasons
-  //     await getAdminAuth().deleteUser(userId)
-  //       .then(() => console.log(`User ${userId} deleted from Authentication.`))
-  //       .catch((authError) => {
-  //         console.error(`Error deleting user from Authentication: ${authError.message}`);
-  //         throw new Error("Failed to delete user from Authentication.");
-  //       });
-
-  //       if (user) {
-  //         try {
-  //           await deleteUser(userId);
-  //           console.log("User deleted successfully.");
-  //         } catch (error) {
-  //           console.error("Error deleting user:", error);
-  //         }
-  //       } else {
-  //         console.log("No user is currently signed in.");
-  //       }
-
-  //     // 4. Update UI
-  //     setusers((prevUsers) => prevUsers.filter((user) => user.id !== userId));
-  //     alert("User and associated data have been deleted successfully.");
-
-  //   } catch (error) {
-  //     console.error(`Error deleting user: ${error.message}`);
-  //     setError("Error deleting user and their data.");
-  //   }
-  // };
-
-  const [openEditModal, setOpenEditModal] = React.useState(false);
-  const [openDeleteModal, setOpenDeleteModal] = React.useState(false);
-  const [selectedUser, setSelectedUser] = React.useState(null);
-
+  
+  
+  const [openEditModal, setOpenEditModal] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  
   // State for edit fields
-  const [editName, setEditName] = React.useState("");
-  const [editEmail, setEditEmail] = React.useState("");
-  const [editPhone, setEditPhone] = React.useState("");
-  const [editStatus, setEditStatus] = React.useState("");
-
+  const [editName, setEditName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editStatus, setEditStatus] = useState("");
+  
   // Load user details into edit form
   const handleEdit = (user) => {
     setSelectedUser(user);
@@ -304,45 +189,63 @@ export default function TableContent() {
     setEditStatus(user.status);
     setOpenEditModal(true);
   };
-
-  // Handler to close the edit modal
+  
   const handleCloseEditModal = () => {
     setOpenEditModal(false);
     setSelectedUser(null);
   };
-
+  
   const handleSaveChanges = async () => {
     if (!selectedUser) return;
-
+  
     try {
       const db = getDatabase();
-      const userRef = ref(db, `users/${selectedUser.id}`);
-
-      // Prepare the updated data
-      const updatedData = {
-        name: editName,
-        email: editEmail,
-        phone: editPhone,
-        status: editStatus,
-      };
-
-      // Update data in Firebase
-      await update(userRef, updatedData);
-
-      // Update local state
-      setusers((prevUsers) =>
-        prevUsers.map((user) =>
-          user.id === selectedUser.id ? { ...user, ...updatedData } : user
-        )
-      );
-
-      alert("User data updated successfully.");
-      handleCloseEditModal(); // Close modal
+      const orgsRef = ref(db, "organizations");
+      const orgSnapshot = await get(orgsRef);
+  
+      if (orgSnapshot.exists()) {
+        const orgData = orgSnapshot.val();
+  
+        for (const orgId in orgData) {
+          const userList = orgData[orgId].users;
+  
+          if (userList) {
+            // Loop through the userList object to find the user by userID
+            for (const userId in userList) {
+              if (userId === selectedUser.userID) {
+                const updatedData = {
+                  name: editName,
+                  email: editEmail,
+                  phone: editPhone,
+                  status: editStatus,
+                };
+  
+                // Update the user's data in this organization
+                const orgUserRef = ref(db, `organizations/${orgId}/users/${userId}`);
+                await update(orgUserRef, updatedData);
+  
+                // Update the UI by updating the users list in local state
+                setUsers((prevUsers) =>
+                  prevUsers.map((user) =>
+                    user.userID === selectedUser.userID ? { ...user, ...updatedData } : user
+                  )
+                );
+  
+                alert("User data updated successfully.");
+                handleCloseEditModal(); // Close modal
+                return; // Exit after updating the first matching user
+              }
+            }
+          }
+        }
+      }
     } catch (error) {
       console.error(`Error updating user: ${error.message}`);
       setError("Failed to update user data.");
     }
   };
+  
+  
 
   return (
     <TableContainer
@@ -363,7 +266,7 @@ export default function TableContent() {
               <Stack
                 direction={"row"}
                 gap={1}
-                sx={{ width: "100%", justifyContent: "center" }}
+                sx={{ width: "100%", justifyContent: "start" }}
               >
                 <Typography
                   fontWeight={500}
@@ -427,11 +330,11 @@ export default function TableContent() {
                 <img src={ArrowDown} height={"16px"} width={"16px"} />
               </Stack>
             </TableCell>
-            <TableCell align="center">
+            <TableCell align="start">
               <Stack
                 direction={"row"}
                 gap={1}
-                sx={{ width: "100%", justifyContent: "center" }}
+                sx={{ width: "100%", justifyContent: "start" }}
               >
                 <Typography
                   fontWeight={500}
@@ -444,11 +347,11 @@ export default function TableContent() {
                 <img src={ArrowDown} height={"16px"} width={"16px"} />
               </Stack>
             </TableCell>
-            <TableCell align="center">
+            <TableCell align="start">
               <Stack
                 direction={"row"}
                 gap={1}
-                sx={{ width: "100%", justifyContent: "center" }}
+                sx={{ width: "100%", justifyContent: "start" }}
               >
                 <Typography
                   fontWeight={500}
@@ -478,11 +381,11 @@ export default function TableContent() {
                 <img src={ArrowDown} height={"16px"} width={"16px"} />
               </Stack>
             </TableCell>
-            <TableCell align="center">
+            <TableCell align="start">
               <Stack
                 direction={"row"}
                 gap={1}
-                sx={{ width: "100%", justifyContent: "center" }}
+                sx={{ width: "100%", justifyContent: "start" }}
               >
                 <Typography
                   fontWeight={500}
@@ -500,13 +403,13 @@ export default function TableContent() {
         <TableBody>
           {users.map((user) => (
             <TableRow key={user.id}>
-              <TableCell align="center">{user.id}</TableCell>
-              <TableCell align="center">{user.name}</TableCell>
-              <TableCell align="center">{user.email}</TableCell>
-              <TableCell align="center">{user.phone}</TableCell>
-              <TableCell align="center">{user.role}</TableCell>
+              <TableCell align="start">{user.userID}</TableCell>
+              <TableCell align="start">{user.name}</TableCell>
+              <TableCell align="start">{user.email}</TableCell>
+              <TableCell align="start">{user.phone}</TableCell>
+              <TableCell align="start">{user.role}</TableCell>
 
-              <TableCell align="center">
+              <TableCell align="start">
                 <Box
                   sx={{
                     width: "80px",
@@ -541,8 +444,9 @@ export default function TableContent() {
                   </Typography>
                 </Box>
               </TableCell>
-              <TableCell align="center">{user.role}</TableCell>
-              <TableCell align="center">
+
+              <TableCell align="start">{user.lastLogin}</TableCell>
+              <TableCell align="start">
                 {user.role === "superAdmin" ? (
                   <Box
                     sx={{
@@ -574,7 +478,7 @@ export default function TableContent() {
                     You
                   </Box>
                 ) : (
-                  <Stack direction={"row"} gap={2} justifyContent="center">
+                  <Stack direction={"row"} gap={2} justifyContent="start">
                     <img
                       src={Edit}
                       width="24px"
@@ -593,7 +497,7 @@ export default function TableContent() {
                     />
                   </Stack>
                 )}
-                {/* <Stack direction={"row"} gap={2} justifyContent="center">
+                {/* <Stack direction={"row"} gap={2} justifyContent="start">
                  
                       <img
                         src={Edit}

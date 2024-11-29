@@ -169,9 +169,15 @@ import {
   set,
   get,
   child,
+  update
 } from "../../../firebase";
 
+
+import { useUser } from "../../../Context/UserContext";
+
+
 function AddUser() {
+
   const [formData, setFormData] = useState({
     userId: "",
     name: "",
@@ -182,116 +188,132 @@ function AddUser() {
     password: "", // Password field added
   });
 
+
+  const { user, updateUserData } = useUser(); // Destructure user data from context
+  console.log("user organization id in ", user.organizationID);
+
+  const CurrentUserID = user.uid;
+
+  console.log("user current id in ", CurrentUserID);
+  const CurrentOrganizationID = user.organizationID;
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+ 
   // const handleAddUser = async () => {
+  //   console.log("Current User UID:", auth.currentUser.uid); // Log to verify if the user is logged in
   //   try {
-  //     // Retrieve logged-in admin's details
   //     const loggedInAdminUid = auth.currentUser?.uid;
-  //     if (!loggedInAdminUid) throw new Error("Admin not logged in.");
-
-  //     const adminRef = ref(rtdb, `users/${loggedInAdminUid}`);
+  
+  //     // Verify if admin data exists at the path
+  //     const adminRef = ref(rtdb, `organizations/${CurrentOrganizationID}/users/${loggedInAdminUid}`);
   //     const adminSnapshot = await get(adminRef);
-
-  //     if (!adminSnapshot.exists()) {
-  //       throw new Error("Admin details not found.");
-  //     }
-
+  
+  //     console.log("Admin Snapshot Key:", adminSnapshot.key);  // Check the key of the snapshot
+  //     console.log("Admin Snapshot Data:", adminSnapshot.val());  // Log actual data
+  
+  //     if (!adminSnapshot.exists()) throw new Error("Admin details not found.");
   //     const adminData = adminSnapshot.val();
-  //     const adminOrgId = adminData.organizationID;
-
-  //     if (!adminOrgId) {
-  //       throw new Error("Admin's organization not found.");
-  //     }
-
-  //     // Create a new user in Firebase Authentication
-  //     const userCredential = await createUserWithEmailAndPassword(
-  //       auth,
-  //       formData.email,
-  //       formData.password
-  //     );
-  //     const newUser = userCredential.user;
-
-  //     // Add user data to the users node
-  //     const newUserRef = ref(rtdb, `users/${newUser.uid}`);
-  //     await set(newUserRef, {
-  //       // userId: formData.userId,
-  //       userId: newUser.uid,
+  //     console.log("Admin Data:", adminData);  // Log admin data to confirm it's fetched
+      
+  //     const adminOrgId = adminData.organizationID;  // Extract organization ID from admin data
+  
+  //     // Sanitize the email to create a valid user ID (replace @ and . with _)
+  //     const sanitizedUserId = formData.email.replace(/[@.]/g, '_');
+  
+  //     // Use formData to populate new user data
+  //     const newUser = {
+  //       userID: sanitizedUserId,  // Use sanitized email for user ID
+  //       organizationID: adminOrgId,  // Add new user under the same organization
   //       name: formData.name,
   //       email: formData.email,
   //       phone: formData.phone,
   //       role: formData.role,
   //       status: formData.status,
-  //       organizationID: adminOrgId,
-  //       organizationName: adminData.organizationName,
-  //       organizationAddress: adminData.organizationAddress,
+  //       password: formData.password, // Assuming you need the password
+  //       lastLogin: new Date().toISOString(),
+  //       assignedMachines: [] // Assuming the user doesn't have assigned machines initially
+  //     };
+  
+  //     // Adding the new user to the `users` node under the specific organization
+  //     const newUserRef = ref(rtdb, `organizations/${adminOrgId}/users/${sanitizedUserId}`);
+  //     await set(newUserRef, newUser);
+  //     console.log("New user added successfully!");
+  //     alert(`user added successfully}`);
+  //     setFormData({
+  //       userId: "",
+  //       name: "",
+  //       email: "",
+  //       phone: "",
+  //       role: "employee", // Default role
+  //       status: "inactive", // Default status
+  //       password: "", // Password field reset
   //     });
-
-  //     // Add user's UID to the organization's users array
-  //     const orgUsersRef = ref(rtdb, `organizations/${adminOrgId}/users`);
-  //     const orgUsersSnapshot = await get(orgUsersRef);
-
-  //     let orgUsers = orgUsersSnapshot.exists() ? orgUsersSnapshot.val() : [];
-  //     if (!Array.isArray(orgUsers)) orgUsers = []; // Ensure it's an array
-  //     orgUsers.push(newUser.uid);
-
-  //     await set(orgUsersRef, orgUsers);
-
-  //     alert("User added successfully!");
+     
+  //     // Optionally, you can handle the user addition further (send notifications, etc.)
+  
   //   } catch (error) {
-  //     console.error("Error adding user:", error);
-  //     alert("Failed to add user. See console for details.");
+  //     console.error("Error adding user:", error.message);  // Improved logging
+  //     alert(`Failed to add user: ${error.message}`);
   //   }
   // };
-
-
-
+  
+  
   const handleAddUser = async () => {
+    console.log("Current User UID:", auth.currentUser.uid); // Log to verify if the user is logged in
     try {
       const loggedInAdminUid = auth.currentUser?.uid;
-      if (!loggedInAdminUid) throw new Error("Admin not logged in.");
   
-      const adminRef = ref(rtdb, `users/${loggedInAdminUid}`);
+      // Verify if admin data exists at the path
+      const adminRef = ref(rtdb, `organizations/${CurrentOrganizationID}/users/${loggedInAdminUid}`);
       const adminSnapshot = await get(adminRef);
-      if (!adminSnapshot.exists()) throw new Error("Admin details not found.");
   
+      if (!adminSnapshot.exists()) throw new Error("Admin details not found.");
       const adminData = adminSnapshot.val();
       const adminOrgId = adminData.organizationID;
   
-      // Firebase Authentication to create user
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        formData.email,
-        formData.password
-      );
-      const newUser = userCredential.user;
+      // Sanitize the email to create a valid user ID (replace @ and . with _)
+      // const sanitizedUserId = formData.email.replace(/[@.]/g, '_');
   
-      // Add user to RTDB
-      const newUserRef = ref(rtdb, `users/${newUser.uid}`);
-      await set(newUserRef, {
-        userId: newUser.uid,  // Use Firebase-generated uid
+      // **Step 1: Create user in Firebase Authentication**
+      const newUserCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+      const newUserUID = newUserCredential.user.uid;  // Get the generated UID
+  
+      // **Step 2: Populate user data for the database**
+      const newUser = {
+        
+        userID: newUserUID,  // Use the Authentication UID
+        organizationID: adminOrgId,
         name: formData.name,
         email: formData.email,
         phone: formData.phone,
         role: formData.role,
         status: formData.status,
-        organizationID: adminOrgId,
+        lastLogin: new Date().toISOString(),
+        assignedMachines: []  // Assuming the user doesn't have assigned machines initially
+      };
+  
+      // **Step 3: Add user data to Realtime Database**
+      const newUserRef = ref(rtdb, `organizations/${adminOrgId}/users/${newUserUID}`);
+      await set(newUserRef, newUser);
+  
+      console.log("New user added successfully!");
+      alert(`User added successfully`);
+  
+      // Reset form data
+      setFormData({
+        name: "",
+        email: "",
+        phone: "",
+        role: "employee",
+        status: "inactive",
+        password: "",
       });
   
-      // Update organization's users array
-      const orgUsersRef = ref(rtdb, `organizations/${adminOrgId}/users`);
-      const orgUsersSnapshot = await get(orgUsersRef);
-      let orgUsers = orgUsersSnapshot.exists() ? orgUsersSnapshot.val() : [];
-      
-      if (!Array.isArray(orgUsers)) orgUsers = [];
-      orgUsers.push(newUser.uid);
-      await set(orgUsersRef, orgUsers);
-  
-      alert("User added successfully!");
     } catch (error) {
-      console.error("Error adding user:", error.message);  // Improved logging
+      console.error("Error adding user:", error.message);
       alert(`Failed to add user: ${error.message}`);
     }
   };

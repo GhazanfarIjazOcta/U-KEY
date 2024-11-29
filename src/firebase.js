@@ -1,7 +1,7 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
-import { getDatabase, ref, set, get, child } from "firebase/database";
+import { getDatabase, ref, set, get, child , update} from "firebase/database";
 
 import {  onAuthStateChanged } from "firebase/auth";
 
@@ -32,5 +32,5 @@ const rtdb = getDatabase(app);  // This is the Realtime Database
 export { onAuthStateChanged };
 
 
-export { auth, rtdb, createUserWithEmailAndPassword, signInWithEmailAndPassword, ref, set, get, child };
+export { auth, rtdb, createUserWithEmailAndPassword, signInWithEmailAndPassword, ref, set, get, child , update};
 

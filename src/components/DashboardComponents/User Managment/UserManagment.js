@@ -28,52 +28,46 @@ import { onValue } from "firebase/database"; // Import onValue
 export default function UserManagment() {
 
   const { user, updateUserData } = useUser(); // Destructure user data from context
-  const sidebarWidth = 12; // Adjust this based on your sidebar's width
+const sidebarWidth = 12; // Adjust this based on your sidebar's width
 
-  console.log("here is the user info " , auth.currentUser)
+console.log("here is the user info", auth.currentUser);
+console.log("user organization id", user.organizationID);
 
+const CurrentUserID = user.uid;
+console.log("user current id", CurrentUserID);
 
- 
-  console.log("user organization id in " , user.organizationID
-  )
+const CurrentOrganizationID = user.organizationID;
 
-  const CurrentUserID = user.uid
+const [users, setUsers] = useState([]);
+const [loading, setLoading] = useState(true);
+const [error, setError] = useState(null);
+const navigate = useNavigate();
 
-  console.log("user current id in " , CurrentUserID) 
-
-  const CurrentOrganizationID = user.organizationID;
-
-  const [users, setusers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const navigate = useNavigate();
-
-  const [totalUsers, setTotalUsers] = useState(0);
+const [totalUsers, setTotalUsers] = useState(0);
 const [adminUsers, setAdminUsers] = useState(0);
 const [operatorUsers, setOperatorUsers] = useState(0);
-
-
+const [employeeUsers, setEmployeeUsers] = useState(0);
 
 useEffect(() => {
   const unsubscribeAuth = onAuthStateChanged(auth, (authUser) => {
     if (authUser) { // Check if the user is authenticated
       try {
         const db = getDatabase();
-        const usersRef = ref(db, "users");
+        const usersRef = ref(db, `organizations/${CurrentOrganizationID}/users`); // Adjust the path to users under the organization
 
         // Use onValue for real-time updates
         const unsubscribeDB = onValue(usersRef, (snapshot) => {
           if (snapshot.exists()) {
             const allUsers = snapshot.val();
-            const filteredUsers = Object.keys(allUsers)
-              .map((key) => ({
-                id: key,
-                ...allUsers[key],
-              }))
-              .filter((user) => user.organizationID === CurrentOrganizationID); // Filter users by organization ID
+
+            // Convert the users object to an array
+            const filteredUsers = Object.keys(allUsers).map((key) => ({
+              id: key,
+              ...allUsers[key],
+            }));
 
             // Set filtered users in state
-            setusers(filteredUsers);
+            setUsers(filteredUsers);
 
             // Count total users
             const totalUsers = filteredUsers.length;
@@ -84,10 +78,14 @@ useEffect(() => {
             // Count users with 'operator' role
             const operatorUsers = filteredUsers.filter((user) => user.role === 'operator').length;
 
+            // Count users with 'operator' role
+            const employeeUsers = filteredUsers.filter((user) => user.role === 'employee').length;
+
             // Set the counts in state
             setTotalUsers(totalUsers);
             setAdminUsers(adminUsers);
             setOperatorUsers(operatorUsers);
+            setEmployeeUsers(employeeUsers)
           } else {
             setError("No users found.");
           }
@@ -100,7 +98,7 @@ useEffect(() => {
       }
     } else {
       setError("You must be logged in to view this page.");
-      // navigate("/login");
+      // navigate("/login"); // Optional redirect to login if the user is not authenticated
     }
     setLoading(false); // Set loading to false after fetching data
   });
@@ -108,7 +106,6 @@ useEffect(() => {
   // Cleanup the auth listener when the component unmounts
   return () => unsubscribeAuth();
 }, [navigate, CurrentOrganizationID]); // Add CurrentOrganizationID to dependency array
-
 
 
   return (
@@ -145,7 +142,7 @@ useEffect(() => {
           <OutlinedCard text={"Operators"} icon={DriverLogo} secText={operatorUsers} />
         </Grid>
         <Grid item xs={13} sm={6} md={2.98} sx={{ flexShrink: 1 }}>
-          <OutlinedCard text={"Guest"} icon={GuestLogo} secText={0} />
+          <OutlinedCard text={"Employee"} icon={GuestLogo} secText={employeeUsers} />
         </Grid>
       </Grid>
 

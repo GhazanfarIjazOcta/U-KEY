@@ -101,7 +101,7 @@ if (user.role === "superAdmin") {
     listToRender = SuperAdminlistItems;
 } else if (user.role === "admin") {
     listToRender = AdminlistItems;
-} else if (user.role === "employee") {
+} else if (user.role === "employee" || user.role === "operator" ) {
     listToRender = CustomerlistItems;
 } else {
     // Default or fallback case (e.g., handle unexpected roles)

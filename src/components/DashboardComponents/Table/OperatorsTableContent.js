@@ -92,17 +92,15 @@ const rows = [
 
 export default function OperatorsTableContent() {
 
- 
   const { user } = useUser(); // Destructure user data from context
-  const navigate = useNavigate();
   const [operators, setOperators] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const CurrentUserID = user?.uid;
   const CurrentOrganizationID = user?.organizationID;
 
-  console.log("User organization ID: ", CurrentOrganizationID); // Check organization ID
+  console.log("current organisation in operators is [][][] " , CurrentOrganizationID )
+  console.log("current operators in operators is [][][] " , operators )
 
   useEffect(() => {
     // Check if user is logged in and has an organization ID
@@ -111,52 +109,60 @@ export default function OperatorsTableContent() {
       setLoading(false);
       return;
     }
-
-    const unsubscribeAuth = onAuthStateChanged(auth, (authUser) => {
-      if (authUser) {
-        const db = getDatabase();
-        const operatorsRef = ref(db, "operators");
-
-        const unsubscribeDB = onValue(operatorsRef, (snapshot) => {
-          if (snapshot.exists()) {
-            const allOperators = snapshot.val();
-            console.log("All operators:", allOperators); // Log all operators
-
-            // Filter operators by organization ID
-            const filteredOperators = Object.keys(allOperators)
-              .map((key) => ({
-                id: key,
-                ...allOperators[key],
-              }))
-              .filter(
-                (operator) => operator.organizationID === CurrentOrganizationID
-              );
-
-            console.log("Filtered operators: ", filteredOperators); // Log filtered operators
-            if (filteredOperators.length === 0) {
-              setError("No operators found for your organization.");
-            }
-
-            setOperators(filteredOperators);
-          } else {
-            setError("No operators data found.");
+  
+    const db = getDatabase();
+    const organizationsRef = ref(db, "organizations");
+  
+    const unsubscribeDB = onValue(organizationsRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const organizations = snapshot.val();
+  
+        console.log("Organizations data is:", organizations);
+  
+        // Find the specific organization based on CurrentOrganizationID
+        const currentOrg = organizations[CurrentOrganizationID];
+  
+        if (currentOrg) {
+          // Get the users of the current organization
+          const allUsers = currentOrg.users;
+  
+          // Filter users by role 'operator'
+          const filteredOperators = Object.keys(allUsers)
+            .map((key) => ({
+              id: key,
+              ...allUsers[key],
+            }))
+            .filter(
+              (user) => user.role === "operator" // Filter by operator role
+            );
+  
+          if (filteredOperators.length === 0) {
+            setError("No operators found for your organization.");
           }
-          setLoading(false); // Set loading to false once data is fetched
-        });
-
-        return () => unsubscribeDB(); // Cleanup DB listener
+  
+          setOperators(filteredOperators);
+        } else {
+          setError("Organization not found.");
+        }
       } else {
-        setError("You must be logged in to view this page.");
-        setLoading(false);
+        setError("No organizations data found.");
       }
+      setLoading(false);
     });
-
-    return () => unsubscribeAuth(); // Cleanup auth listener
-  }, [user, CurrentOrganizationID]); // Dependency array includes `user` and `CurrentOrganizationID`
-
+  
+    return () => unsubscribeDB(); // Cleanup DB listener
+  }, [user, CurrentOrganizationID]);
+  
   if (loading) {
     return <div>Loading...</div>;
   }
+  
+  if (error) {
+    return <div>Error: {error}</div>;
+  }
+  
+  
+
 
   if (error) {
     return <div>Error: {error}</div>;
@@ -222,7 +228,7 @@ export default function OperatorsTableContent() {
               </Stack>
             </TableCell>
 
-            <TableCell align="center">
+            {/* <TableCell align="center">
               <Stack
                 direction={"row"}
                 gap={1}
@@ -232,7 +238,7 @@ export default function OperatorsTableContent() {
                   User
                 </Typography>
               </Stack>
-            </TableCell>
+            </TableCell> */}
 
 
 
@@ -258,13 +264,13 @@ export default function OperatorsTableContent() {
                 sx={{ width: "100%", justifyContent: "center" }}
               >
                 <Typography sx={TableStyles.headingStyle}>
-                  Login Time
+                  Status
                 </Typography>
               </Stack>
             </TableCell>
 
 
-            <TableCell align="center">
+            {/* <TableCell align="center">
               <Stack
                 direction={"row"}
                 gap={1}
@@ -274,7 +280,7 @@ export default function OperatorsTableContent() {
                   Logout Time
                 </Typography>
               </Stack>
-            </TableCell>
+            </TableCell> */}
 
 
             <TableCell align="center">
@@ -284,7 +290,7 @@ export default function OperatorsTableContent() {
                 sx={{ width: "100%", justifyContent: "center" }}
               >
                 <Typography sx={TableStyles.headingStyle}>
-                  Duration
+                  Phone
                 </Typography>
               </Stack>
             </TableCell>
@@ -296,7 +302,19 @@ export default function OperatorsTableContent() {
                 sx={{ width: "100%", justifyContent: "center" }}
               >
                 <Typography sx={TableStyles.headingStyle}>
-                  Logout time
+                  Login time
+                </Typography>
+              </Stack>
+            </TableCell>
+
+            <TableCell align="center">
+              <Stack
+                direction={"row"}
+                gap={1}
+                sx={{ width: "100%", justifyContent: "center" }}
+              >
+                <Typography sx={TableStyles.headingStyle}>
+                  Actions
                 </Typography>
               </Stack>
             </TableCell>
@@ -487,10 +505,11 @@ export default function OperatorsTableContent() {
           {operators.map((operator) => (
             <TableRow key={user.id}>
               {/* <TableCell align="center">{user.id}</TableCell> */}
-              <TableCell align="center">{operator.userID}</TableCell>
-              <TableCell align="center">{operator.companyName
-              }</TableCell>
-              <TableCell align="center">{operator.startTime}</TableCell>
+              <TableCell align="center">{operator.name}</TableCell>
+              <TableCell align="center">{operator.name}</TableCell>
+              <TableCell align="center">{operator.name}</TableCell>
+             
+              <TableCell align="center">{operator.name}</TableCell>
 
               {/* <TableCell align="center">
                 <Box
@@ -529,43 +548,13 @@ export default function OperatorsTableContent() {
               </TableCell> */}
 
 
-              <TableCell align="center">{operator.stopTime }</TableCell>
 
-              <TableCell align="center">
-                <Box
-                  sx={{
-                    width: "80px",
-                    height: "25px",
-                    backgroundColor:
-                    operator.status === "active" ? "#ECFDF3" : "#F2F4F7",
-                    borderRadius: "40%",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "10px",
-                  }}
-                >
-                  <Box
-                    sx={{
-                      width: 6,
-                      height: 6,
-                      borderRadius: "50%",
-                      backgroundColor:
-                      operator.status === "active" ? "#28A745" : "#6C757D",
-                    }}
-                  />
-                  <Typography
-                    fontWeight={500}
-                    fontSize={"14px"}
-                    sx={{
-                      color: operator.status === "active" ? "#037847" : "#364254",
-                    }}
-                    fontFamily={"Inter"}
-                  >
-                    {operator.status}
-                  </Typography>
-                </Box>
-              </TableCell>
+              <TableCell align="center">{operator.organizationID }</TableCell>
+              
+
+             
+              
+
 
               
 
@@ -606,83 +595,14 @@ export default function OperatorsTableContent() {
               </TableCell>
 
 
-              <TableCell align="center">{operator.role}</TableCell>
+              <TableCell align="center">{operator.phone}</TableCell>
+
+               <TableCell align="center">{operator.lastLogin }</TableCell>
 
 
-              <TableCell align="center">
-                {operator.role === "superAdmin" ? (
-                  <Box
-                    sx={{
-                      padding: "4px 8px",
-                      backgroundColor: "#E3F2FD",
-                      color: "#0D47A1",
-                      borderRadius: "8px",
-                      fontWeight: "bold",
-                      fontSize: "14px",
-                    }}
-                    // onClick={handleSuperAdminAction}
-                    style={{ cursor: "pointer" }}
-                  >
-                    Super Admin
-                  </Box>
-                ) : operator.id === CurrentOrganizationID ? (
-                  <Box
-                    sx={{
-                      padding: "4px 8px",
-                      backgroundColor: "#E3F2FD",
-                      color: "#0D47A1",
-                      borderRadius: "8px",
-                      fontWeight: "bold",
-                      fontSize: "14px",
-                    }}
-                    // onClick={handleAdminAction}
-                    style={{ cursor: "pointer" }}
-                  >
-                    You
-                  </Box>
-                ) : (
-                  <Stack direction={"row"} gap={2} justifyContent="center">
-                    {/* <img
-                      src={Edit}
-                      width="24px"
-                      height="24px"
-                      onClick={() => handleEdit(user)}
-                      style={{ cursor: "pointer" }}
-                      alt="Edit"
-                    /> */}
-                    {/* <img
-                      src={Delete}
-                      width="24px"
-                      height="24px"
-                      onClick={() => handleDeleteUser(user.id, user.users)}
-                      style={{ cursor: "pointer" }}
-                      alt="Delete"
-                    /> */}
-                  </Stack>
-                )}
-                {/* <Stack direction={"row"} gap={2} justifyContent="center">
-                 
-                      <img
-                        src={Edit}
-                        width="24px"
-                        height="24px"
-                        onClick={() => handleEdit(user)}
-                        style={{ cursor: "pointer" }}
-                        alt="Edit"
-                      />
-                  <img
-                    src={Delete}
-                    width="24px"
-                    height="24px"
-                    onClick={() => handleDeleteUser(user.id, user.users)}
-                    
-                    style={{ cursor: "pointer" }}
-                    alt="Delete"
-                  />
-                </Stack> */}
-              </TableCell>
+           
 
-              <TableCell align="center">{user.role}</TableCell>
+               <TableCell align="center">{operator.lastLogin }</TableCell>
 
              
             </TableRow>

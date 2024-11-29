@@ -215,61 +215,179 @@ import { useUser } from "../../../Context/UserContext"; // Import your UserConte
 
 function Login() {
     const navigate = useNavigate();
-    const [passwordVisible, setPasswordVisible] = useState(false);
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(false);
-
-    const { updateUserData } = useUser();
-
-    useEffect(() => {
-        // Restore session on component mount
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
-            if (user) {
-                const storedData = localStorage.getItem("user");
-                if (storedData) {
-                    const userData = JSON.parse(storedData);
-                    redirectToDashboard(userData.role);
-                }
-            }
-        });
-        return () => unsubscribe(); // Cleanup listener on unmount
-    }, []);
-
-    useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
-            if (!user) {
-                // If no user is logged in, clear the session and redirect to login
-                localStorage.removeItem('user');
-                navigate("/login");
-            }
-        });
-    
-        // Cleanup on unmount
-        return () => unsubscribe();
-    }, []);
-    
-
+    const { updateUserData } = useUser(); // Context to manage user data
+    const [passwordVisible, setPasswordVisible] = useState(false);
+    const [cureentOrganisatiionID , setCureentOrganisatiionID] = useState(5)
+    console.log("current org id is ", cureentOrganisatiionID)
+  
     const togglePasswordVisibility = () => setPasswordVisible(!passwordVisible);
-
-    const getUserData = async (userId) => {
-        const userRef = ref(rtdb, `users/${userId}`);
+  
+    // Restore session on component mount
+    useEffect(() => {
+      const unsubscribe = onAuthStateChanged(auth, (user) => {
+        if (user) {
+          const storedData = localStorage.getItem("user");
+          if (storedData) {
+            const userData = JSON.parse(storedData);
+            redirectToDashboard(userData.role);
+          }
+        }
+      });
+      return () => unsubscribe();
+    }, []);
+  
+    // If no user is logged in, clear session and redirect to login
+    useEffect(() => {
+      const unsubscribe = onAuthStateChanged(auth, (user) => {
+        if (!user) {
+          localStorage.removeItem('user');
+          navigate("/login");
+        }
+      });
+      return () => unsubscribe();
+    }, []);
+  
+    const getUserData = async (userId, organizationId) => {
+        const userRef = ref(rtdb, `organizations/${organizationId}/users/${userId}`);
         try {
             const snapshot = await get(userRef);
-            return snapshot.exists() ? snapshot.val() : null;
+            if (snapshot.exists()) {
+                console.log("Fetched user data:", snapshot.val());
+                return snapshot.val(); // Return the user data (email, role, organizationID, etc.)
+            } else {
+                console.warn("User data does not exist for UID:", userId);
+                return null; // Return null if no data exists
+            }
         } catch (error) {
             console.error("Error fetching user data:", error);
-            return null;
+            setError("Failed to fetch user data. Please try again later.");
+            return null; // Return null if there is an error
         }
     };
+    
+    
+  
+    const handleLogin = async () => {
+        setLoading(true);
+        try {
+            // Sign in with email and password
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
+            const userId = user.uid;
+    
+            const userRef = ref(rtdb, `organizations`);
+            const snapshot = await get(userRef);
 
-    const redirectToDashboard = (role) => {
-        
-        if (role === "admin") navigate("/dashboard");
-        else if (role === "employee") navigate("/dashboard");
-        else navigate("/dashboard");
+          
+if (snapshot.exists()) {
+    console.log("Snapshot exists:", snapshot.val());
+} else {
+    console.log("No data found.");
+}
+
+            
+            if (snapshot.exists()) {
+                const organizations = snapshot.val();
+            
+                // Iterate through all organizations to find the user
+                let userOrganizationID = 1;
+                let userOrganizationData = null;
+            
+
+
+                for (const orgID in organizations) {
+                    const organization = organizations[orgID];
+                    const users = organization.users;
+                    
+                    // console.log(`Checking organization: ${orgID}`);
+                    // console.log("Users in this organization:", users);
+                     console.log("Users in this organization: []", organization);
+                     console.log("Users in this organization: ==> ", userId);
+                    
+                    if (users && users[userId]) {  // Check if the user exists in the current organization's users
+                        console.log(`User ${userId} found in organization ${orgID}`);
+                        userOrganizationID = orgID;
+                        userOrganizationData = organization;
+                        break;  // Exit loop once the user is found
+                    } else {
+                        console.log(`Checking organization: ${userOrganizationID}`);
+                    console.log("Users in this organization:", users);
+                        console.log(`User ${userId} not found in organization ${orgID}`);
+                    }
+                }
+                
+
+                setCureentOrganisatiionID(userOrganizationID)
+                if (userOrganizationID) {
+                    // You now have the user’s organization ID and data
+                    console.log('User belongs to Organization:', userOrganizationID, userOrganizationData);
+                   
+                    // Fetch user data from the 'users' node directly using the userOrganizationID
+                    const storedUserData = await getUserData(user.uid, userOrganizationID);
+                    console.log("Fetched user data:", storedUserData);
+                    
+                    if (storedUserData && storedUserData.organizationID) {
+                        // If organizationID exists, fetch organization-specific data
+                        const organizationUserData = await getUserData(user.uid, storedUserData.organizationID);
+    
+                        if (organizationUserData) {
+                            const completeUserData = {
+                                uid: user.uid,
+                                email: user.email,
+                                ...storedUserData,  // From the 'users' node
+                                ...organizationUserData, // Additional organization data
+                            };
+    
+                            // Store complete user data in localStorage
+                            localStorage.setItem("user", JSON.stringify(completeUserData));
+    
+                            // Update context with the user data
+                            updateUserData(completeUserData);
+    
+                            // Redirect based on user role
+                            redirectToDashboard(storedUserData.role);
+                        } else {
+                            setError("Organization data not found.");
+                        }
+                    } else {
+                        setError("User data not found or missing organization ID.");
+                    }
+                } else {
+                    setError("User not found in any organization");
+                }
+            }
+    
+        } catch (error) {
+            handleFirebaseErrors(error);
+        } finally {
+            setLoading(false);
+        }
     };
+    
+  
+    const handleFirebaseErrors = (error) => {
+      const errorCode = error.code;
+      const errorMessage = error.message;
+      setError(`Error: ${errorCode} - ${errorMessage}`);
+    };
+  
+    const redirectToDashboard = (role) => {
+      if (role === "admin") navigate("/dashboard");
+      else if (role === "operator") navigate("/dashboard");
+      else navigate("/dashboard");
+    };
+  
+    // const redirectToDashboard = (role) => {
+        
+    //     if (role === "admin") navigate("/dashboard");
+    //     else if (role === "employee") navigate("/dashboard");
+    //     else navigate("/dashboard");
+    // };
+
 
     // const handleLogin = async () => {
     //     setLoading(true);
@@ -297,50 +415,50 @@ function Login() {
     //     }
     // };
 
-    const handleLogin = async () => {
-        setLoading(true);
-        try {
-            const userCredential = await signInWithEmailAndPassword(auth, email, password);
-            const user = userCredential.user;
+    // const handleLogin = async () => {
+    //     setLoading(true);
+    //     try {
+    //         const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    //         const user = userCredential.user;
     
-            const userData = await getUserData(user.uid);
-            if (userData) {
-                const completeUserData = {
-                    uid: user.uid,
-                    email: user.email,
-                    name: user.displayName || "",
-                    ...userData,
-                };
+    //         const userData = await getUserData(user.uid);
+    //         if (userData) {
+    //             const completeUserData = {
+    //                 uid: user.uid,
+    //                 email: user.email,
+    //                 name: user.displayName || "",
+    //                 ...userData,
+    //             };
                 
-                // Store data in localStorage
-                localStorage.setItem("user", JSON.stringify(completeUserData));
+    //             // Store data in localStorage
+    //             localStorage.setItem("user", JSON.stringify(completeUserData));
                 
-                // Update context with the user data
-                updateUserData(completeUserData);
+    //             // Update context with the user data
+    //             updateUserData(completeUserData);
                 
-                redirectToDashboard(userData.role);
-            } else {
-                setError("User data not found in the database.");
-            }
-        } catch (error) {
-            handleFirebaseErrors(error);
-        } finally {
-            setLoading(false);
-        }
-    };
+    //             redirectToDashboard(userData.role);
+    //         } else {
+    //             setError("User data not found in the database.");
+    //         }
+    //     } catch (error) {
+    //         handleFirebaseErrors(error);
+    //     } finally {
+    //         setLoading(false);
+    //     }
+    // };
     
 
 
 
-    const handleFirebaseErrors = (error) => {
-        if (error.code === "auth/wrong-password") {
-            setError("Incorrect password. Please try again.");
-        } else if (error.code === "auth/user-not-found") {
-            setError("No user found with this email.");
-        } else {
-            setError("An unexpected error occurred. Please try again.");
-        }
-    };
+    // const handleFirebaseErrors = (error) => {
+    //     if (error.code === "auth/wrong-password") {
+    //         setError("Incorrect password. Please try again.");
+    //     } else if (error.code === "auth/user-not-found") {
+    //         setError("No user found with this email.");
+    //     } else {
+    //         setError("An unexpected error occurred. Please try again.");
+    //     }
+    // };
 
     const signupNavigation = () => navigate("/signup");
 
