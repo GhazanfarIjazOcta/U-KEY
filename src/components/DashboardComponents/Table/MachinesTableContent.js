@@ -13,15 +13,35 @@ import { TableStyles } from "../../UI/Styles";
 
 import Edit from "../../../assets/Table/Edit.png";
 import Delete from "../../../assets/Table/Delete.png";
+
+
+
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "../../../firebase"; // Firebase auth instance
+
+import { getDatabase, ref, get, set, update, remove } from "firebase/database";
+import { getAuth, deletemachine } from "firebase/auth"; // Import deletemachine from Firebase Authentication
+import { useNavigate } from "react-router-dom";
+
+
+
+import { useUser } from "../../../Context/UserContext";
+import { useState } from "react";
+
+import { useEffect } from "react";
+
+
+
+
 function createData(
     companyName,
     totalMachines,
     tableotalOperators,
     activeJobSites,
-    Users,
-    recentUsersPin,
+    machines,
+    recentmachinesPin,
     subscriptionStatus,
-    userName,
+    machineName,
     partNumbers,
     lubricantDetails,
     loginTime,
@@ -32,10 +52,10 @@ function createData(
         totalMachines,
         tableotalOperators,
         activeJobSites,
-        Users,
-        recentUsersPin,
+        machines,
+        recentmachinesPin,
         subscriptionStatus,
-        userName,
+        machineName,
         partNumbers,
         lubricantDetails,
         loginTime,
@@ -75,6 +95,203 @@ const rows = [
 ];
 
 export default function MachinesTableContent() {
+
+
+
+    const { user, updatemachineData } = useUser(); // Destructure machine data from context
+    console.log("machine organization id in ", user.organizationID);
+  
+    const CurrentmachineID = user.uid;
+  
+    console.log("machine current id in ", CurrentmachineID);
+
+
+    const CurrentOrganizationID = user.organizationID;
+    const [machines, setmachines] = useState([]);
+
+    const navigate = useNavigate();
+
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+  
+    console.log("the machines getting here are " , machines)
+
+
+
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, async (authmachine) => {
+          if (authmachine) {
+            try {
+              const db = getDatabase();
+              const orgRef = ref(db, "organizations");  // Reference to all organizations
+    
+              const snapshot = await get(orgRef);  // Fetch all organizations
+    
+              if (snapshot.exists()) {
+                const allOrganizations = snapshot.val();
+                const filteredmachines = [];
+    
+                // Loop through organizations to find machines under the current organization ID
+                for (const orgKey in allOrganizations) {
+                  const organization = allOrganizations[orgKey];
+                  if (organization.organizationID === CurrentOrganizationID && organization.machines) {
+                    // Extract the machines and add them to the filtered list
+                    for (const machineKey in organization.machines) {
+                      const machine = organization.machines[machineKey];
+                      filteredmachines.push({
+                        ...machine,  // Spread to include machine details
+                        machineID: machine.machineID,
+                      });
+                    }
+                  }
+                }
+                
+                setmachines(filteredmachines);  // Update state with the filtered machines
+              } else {
+                setError("No organizations found.");
+              }
+            } catch (err) {
+              setError(err.message);
+            }
+          } else {
+            setError("You must be logged in to view this page.");
+          }
+          setLoading(false);  // Set loading to false after fetching data
+        });
+    
+        return () => unsubscribe(); // Cleanup on component unmount
+      }, [CurrentOrganizationID]); // Ensure the effect re-runs if the organization ID changes
+      
+    
+    
+      const handleDeletemachine = async (machineId) => {
+        try {
+          const db = getDatabase();
+          const authInstance = getAuth();
+          
+          // 1. Delete machine from the 'machines' node
+          // const machineRef = ref(db, `machines/${machineId}`);
+          const machineRef = ref(db, `organizations/${CurrentOrganizationID}/machines/${machineId}`);
+          await remove(machineRef);
+      
+          // 2. Remove machine from organization-specific machines list
+          const orgsRef = ref(db, "organizations");
+          const orgSnapshot = await get(orgsRef);
+          
+          if (orgSnapshot.exists()) {
+            const orgData = orgSnapshot.val();
+            
+            for (const orgId in orgData) {
+              const machineList = orgData[orgId].machines;
+              
+              if (machineList && machineList[machineId]) {
+                // Remove the machine from the organization's machine list
+                const updatedmachines = { ...machineList };
+                delete updatedmachines[machineId]; // Remove the machine
+                
+                const orgmachinesRef = ref(db, `organizations/${orgId}/machines`);
+                await update(orgmachinesRef, updatedmachines); // Update the organization's machine list in the database
+              }
+            }
+          }
+      
+          // 3. If the logged-in machine is being deleted, delete from Firebase Authentication
+          const currentmachine = authInstance.currentmachine;
+          if (currentmachine && currentmachine.uid === machineId) {
+            try {
+            //   await deletemachine(currentmachine); // Delete the logged-in machine from Firebase Authentication
+              console.log(`machine with UID: ${machineId} deleted from Firebase Authentication.`);
+            } catch (authError) {
+              console.error(`Error deleting machine from Firebase Authentication: ${authError.message}`);
+            }
+          }
+      
+          // 4. Update the local UI state by removing the deleted machine
+          setmachines((prevmachines) => prevmachines.filter((machine) => machine.id !== machineId));
+      
+          alert("machine and associated data have been deleted successfully.");
+        } catch (error) {
+          console.error(`Error deleting machine: ${error.message}`);
+          setError("Error deleting machine and their data.");
+        }
+      };
+      
+      
+      const [openEditModal, setOpenEditModal] = useState(false);
+      const [selectedmachine, setSelectedmachine] = useState(null);
+      
+      // State for edit fields
+      const [editName, setEditName] = useState("");
+      const [editEmail, setEditEmail] = useState("");
+      const [editPhone, setEditPhone] = useState("");
+      const [editStatus, setEditStatus] = useState("");
+      
+      // Load machine details into edit form
+      const handleEdit = (machine) => {
+        setSelectedmachine(machine);
+        setEditName(machine.name);
+        setEditEmail(machine.email);
+        setEditPhone(machine.phone);
+        setEditStatus(machine.status);
+        setOpenEditModal(true);
+      };
+      
+      const handleCloseEditModal = () => {
+        setOpenEditModal(false);
+        setSelectedmachine(null);
+      };
+      
+      const handleSaveChanges = async () => {
+        if (!selectedmachine) return;
+      
+        try {
+          const db = getDatabase();
+          const orgsRef = ref(db, "organizations");
+          const orgSnapshot = await get(orgsRef);
+      
+          if (orgSnapshot.exists()) {
+            const orgData = orgSnapshot.val();
+      
+            for (const orgId in orgData) {
+              const machineList = orgData[orgId].machines;
+      
+              if (machineList) {
+                // Loop through the machineList object to find the machine by machineID
+                for (const machineId in machineList) {
+                  if (machineId === selectedmachine.machineID) {
+                    const updatedData = {
+                      name: editName,
+                      email: editEmail,
+                      phone: editPhone,
+                      status: editStatus,
+                    };
+      
+                    // Update the machine's data in this organization
+                    const orgmachineRef = ref(db, `organizations/${orgId}/machines/${machineId}`);
+                    await update(orgmachineRef, updatedData);
+      
+                    // Update the UI by updating the machines list in local state
+                    setmachines((prevmachines) =>
+                      prevmachines.map((machine) =>
+                        machine.machineID === selectedmachine.machineID ? { ...machine, ...updatedData } : machine
+                      )
+                    );
+      
+                    alert("machine data updated successfully.");
+                    handleCloseEditModal(); // Close modal
+                    return; // Exit after updating the first matching machine
+                  }
+                }
+              }
+            }
+          }
+        } catch (error) {
+          console.error(`Error updating machine: ${error.message}`);
+          setError("Failed to update machine data.");
+        }
+      };
+      
+
     return (
         <TableContainer
             sx={{
@@ -146,7 +363,7 @@ export default function MachinesTableContent() {
                             >
                                 <Typography sx={TableStyles.headingStyle}>
 
-                                    Recent Users (4-digit PIN)
+                                    Recent machines (4-digit PIN)
                                 </Typography>
                             </Stack>
                         </TableCell>
@@ -177,7 +394,7 @@ export default function MachinesTableContent() {
                             >
                                 <Typography sx={TableStyles.headingStyle}>
 
-                                    Company/ User Name
+                                    Company/ machine Name
                                 </Typography>
                             </Stack>
                         </TableCell>
@@ -239,10 +456,12 @@ export default function MachinesTableContent() {
 
                     </TableRow>
                 </TableHead>
+
+
                 <TableBody>
                     {rows.map((row) => (
                         <TableRow
-                            key={row.UserID}
+                            key={row.machineID}
                             sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
                         >
                             <TableCell
@@ -323,7 +542,7 @@ export default function MachinesTableContent() {
                                 >
                                     <Typography sx={TableStyles.textStyle} >
 
-                                        {row.recentUsersPin}
+                                        {row.recentmachinesPin}
 
 
                                     </Typography>
@@ -357,7 +576,7 @@ export default function MachinesTableContent() {
                                 >
                                     <Typography sx={TableStyles.textStyle} >
 
-                                        {row.recentUsersPin}
+                                        {row.recentmachinesPin}
 
 
                                     </Typography>
@@ -376,7 +595,7 @@ export default function MachinesTableContent() {
                                 >
                                     <Typography sx={TableStyles.textStyle} >
 
-                                        {row.recentUsersPin}
+                                        {row.recentmachinesPin}
 
 
                                     </Typography>
@@ -395,7 +614,7 @@ export default function MachinesTableContent() {
                                 >
                                     <Typography sx={TableStyles.textStyle} >
 
-                                        {row.recentUsersPin}
+                                        {row.recentmachinesPin}
 
 
                                     </Typography>
@@ -414,7 +633,7 @@ export default function MachinesTableContent() {
                                 >
                                     <Typography sx={TableStyles.textStyle} >
 
-                                        {row.recentUsersPin}
+                                        {row.recentmachinesPin}
 
 
                                     </Typography>
@@ -433,7 +652,7 @@ export default function MachinesTableContent() {
                                 >
                                     <Typography sx={TableStyles.textStyle} >
 
-                                        {row.recentUsersPin}
+                                        {row.recentmachinesPin}
 
 
                                     </Typography>
@@ -444,6 +663,135 @@ export default function MachinesTableContent() {
                         </TableRow>
                     ))}
                 </TableBody>
+
+
+                <TableBody>
+          {machines.map((machine) => (
+            <TableRow key={machine.id}>
+              <TableCell align="start">{machine.machineID}</TableCell>
+              <TableCell align="start">{machine.details}</TableCell>
+              <TableCell align="start">{machine.organizationID}</TableCell>
+              <TableCell align="start">{machine.phone}</TableCell>
+              <TableCell align="start">{machine.role}</TableCell>
+
+              <TableCell align="start">
+                <Box
+                  sx={{
+                    width: "80px",
+                    height: "25px",
+                    backgroundColor:
+                      machine.status === "active" ? "#ECFDF3" : "#F2F4F7",
+                    borderRadius: "40%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "10px",
+                  }}
+                >
+                  <Box
+                    sx={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: "50%",
+                      backgroundColor:
+                        machine.status === "active" ? "#28A745" : "#6C757D",
+                    }}
+                  />
+                  <Typography
+                    fontWeight={500}
+                    fontSize={"14px"}
+                    sx={{
+                      color: machine.status === "active" ? "#037847" : "#364254",
+                    }}
+                    fontFamily={"Inter"}
+                  >
+                    {machine.status}
+                  </Typography>
+                </Box>
+              </TableCell>
+
+              <TableCell align="start">{machine.lastLogin}</TableCell>
+              <TableCell align="start">
+                {machine.role === "superAdmin" ? (
+                  <Box
+                    sx={{
+                      padding: "4px 8px",
+                      backgroundColor: "#E3F2FD",
+                      color: "#0D47A1",
+                      borderRadius: "8px",
+                      fontWeight: "bold",
+                      fontSize: "14px",
+                    }}
+                    // onClick={handleSuperAdminAction}
+                    style={{ cursor: "pointer" }}
+                  >
+                    Super Admin
+                  </Box>
+                ) : machine.id === CurrentmachineID ? (
+                  <Box
+                    sx={{
+                      padding: "4px 8px",
+                      backgroundColor: "#E3F2FD",
+                      color: "#0D47A1",
+                      borderRadius: "8px",
+                      fontWeight: "bold",
+                      fontSize: "14px",
+                    }}
+                    // onClick={handleAdminAction}
+                    style={{ cursor: "pointer" }}
+                  >
+                    You
+                  </Box>
+                ) : (
+                  <Stack direction={"row"} gap={2} justifyContent="start">
+                    <img
+                      src={Edit}
+                      width="24px"
+                      height="24px"
+                      onClick={() => handleEdit(machine)}
+                      style={{ cursor: "pointer" }}
+                      alt="Edit"
+                    />
+                    <img
+                      src={Delete}
+                      width="24px"
+                      height="24px"
+                      onClick={() => handleDeletemachine(machine.id, machine.machines)}
+                      style={{ cursor: "pointer" }}
+                      alt="Delete"
+                    />
+                  </Stack>
+                )}
+                {/* <Stack direction={"row"} gap={2} justifyContent="start">
+                 
+                      <img
+                        src={Edit}
+                        width="24px"
+                        height="24px"
+                        onClick={() => handleEdit(machine)}
+                        style={{ cursor: "pointer" }}
+                        alt="Edit"
+                      />
+                  <img
+                    src={Delete}
+                    width="24px"
+                    height="24px"
+                    onClick={() => handleDeletemachine(machine.id, machine.machines)}
+                    
+                    style={{ cursor: "pointer" }}
+                    alt="Delete"
+                  />
+                </Stack> */}
+              </TableCell>
+            </TableRow>
+          ))}
+        
+        
+                 </TableBody>
+
+
+
+
             </Table>
         </TableContainer>
     );
